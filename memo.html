@@ -16,7 +16,6 @@
         <img src="" class="app-logo mb-2" alt="Logo" style="height: 60px;">
         <h4 class="fw-bold m-0 text-success">บันทึกข้อความ (Memo)</h4>
     </div>
-    
     <form id="memoForm">
         <div class="row g-3">
             <div class="col-md-6"><label class="form-label fw-bold">เลขที่เอกสาร</label><input type="text" id="m_no" class="form-control" placeholder="เช่น MEMO-66/001" required></div>
@@ -35,11 +34,7 @@
             <div class="col-md-6"><label class="form-label fw-bold">เรียน (ถึงใคร)</label><input type="text" id="m_to" class="form-control" required></div>
             <div class="col-12"><label class="form-label fw-bold">เรื่อง</label><input type="text" id="m_subject" class="form-control" required></div>
             <div class="col-12"><label class="form-label fw-bold">ข้อความ</label><textarea id="m_content" class="form-control" rows="6" required></textarea></div>
-            
-            <div class="col-12">
-                <label class="form-label fw-bold">แนบไฟล์ (ถ้ามี)</label>
-                <input type="file" id="m_attachment" class="form-control" accept=".pdf, .jpg, .jpeg, .png">
-            </div>
+            <div class="col-12"><label class="form-label fw-bold">แนบไฟล์ (ถ้ามี)</label><input type="file" id="m_attachment" class="form-control" accept=".pdf, .jpg, .jpeg, .png"></div>
         </div>
         <button type="submit" class="btn btn-success w-100 py-2 fs-5 mt-4 shadow-sm" id="btnMemoSubmit">📤 ส่งบันทึกข้อความ</button>
     </form>
