@@ -1,15 +1,15 @@
 // ================= 1. CONFIG =================
 const CONFIG = {
-    // Supabase (Key ของคุณ)
+    // Supabase
     supaUrl: 'https://pufddwdcpugilwlavban.supabase.co', 
     supaKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1ZmRkd2RjcHVnaWx3bGF2YmFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzODY1MDUsImV4cCI6MjA3NDk2MjUwNX0.6dyYteDu6QSkTL9hIiaHw_2WeltSGSIoMSvx3OcEjN0', 
     
-    // EmailJS (Key ของคุณ)
+    // EmailJS
     emailPublicKey: 'rEly1Il6Xz0qZwaSc',   
     emailServiceId: 'service_tolm3pu',   
     emailTemplateId_Master: 'template_master', 
 
-    // [1] อีเมลหัวหน้าแผนก (ผู้รับแจ้ง Memo)
+    // [1] อีเมลหัวหน้าแผนก
     departmentHeads: {
         'จัดซื้อ': 'jakkidmarat@gmail.com',      
         'บัญชี': 'account@example.com',          
@@ -24,7 +24,6 @@ const CONFIG = {
     // [3] จัดซื้อ
     purchasingEmail: 'hr.bpp.2564@gmail.com',
 
-    // รหัสผ่าน
     passwords: {
         '1001': 'จัดซื้อ',        
         '1002': 'บัญชี',          
@@ -43,9 +42,20 @@ let currentUserRole = sessionStorage.getItem('userRole') || '';
 let currentUserDept = sessionStorage.getItem('userDept') || ''; 
 
 document.addEventListener("DOMContentLoaded", function() {
-    if (typeof LOGO_BASE64 !== 'undefined') {
-        document.querySelectorAll('.app-logo').forEach(img => img.src = LOGO_BASE64);
+    // [แก้ไข] โหลด Logo ให้ชัวร์ขึ้น
+    // ตรวจสอบว่าตัวแปร LOGO_BASE64 จากไฟล์ logo.js มาหรือยัง
+    if (typeof LOGO_BASE64 !== 'undefined' && LOGO_BASE64) {
+        const logos = document.querySelectorAll('.app-logo');
+        logos.forEach(img => {
+            img.src = LOGO_BASE64;
+            // เพิ่ม Error handling ถ้ารูปโหลดไม่ได้
+            img.onerror = function() {
+                console.error("Logo failed to load. Check Base64 string.");
+                this.style.display = 'none'; // ซ่อนถ้ารูปเสีย
+            };
+        });
     }
+
     if (window.location.href.includes('admin.html')) {
         const overlay = document.getElementById('loginOverlay');
         if (overlay) {
@@ -60,7 +70,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-// ================= [MEMO LOGIC - แก้ไขใหม่] =================
+// ================= MEMO LOGIC =================
 const memoForm = document.getElementById('memoForm');
 if (memoForm) {
     memoForm.addEventListener('submit', async (e) => {
@@ -70,7 +80,6 @@ if (memoForm) {
         btn.disabled = true; 
         
         try {
-            // 1. อัปโหลดไฟล์ (ถ้ามี)
             let publicUrl = null;
             const fileInput = document.getElementById('m_attachment');
             if (fileInput && fileInput.files.length > 0) {
@@ -96,44 +105,42 @@ if (memoForm) {
                 status: 'pending'
             };
 
-            // 2. บันทึกลง DB และขอ ID กลับมา (.select())
             const { data, error } = await db.from('memos').insert([payload]).select();
             if (error) throw error;
 
-            // 3. สร้างลิงก์สำหรับดูเอกสาร (สวยๆ)
+            const baseUrl = window.location.origin;
             const memoId = data[0].id;
-            const viewLink = window.location.origin + `/view_memo.html?id=${memoId}`;
+            const viewLink = `${baseUrl}/view_memo.html?id=${memoId}`;
 
             btn.innerText = '⏳ ส่งอีเมล...';
             const headEmail = CONFIG.departmentHeads[payload.from_dept];
             
-            // สร้าง HTML สำหรับอีเมล (เน้นปุ่มกด ไม่เน้นข้อความยาว)
-            let emailHtml = `
-                <h3>เรียน หัวหน้าแผนก${payload.from_dept},</h3>
-                <p>มีการสร้างบันทึกข้อความ (Memo) ใหม่ในระบบ</p>
-                <div style="background-color:#f8f9fa; padding:15px; border-left:4px solid #28a745; margin:10px 0;">
-                    <p style="margin:5px 0;"><b>เลขที่:</b> ${payload.memo_no}</p>
-                    <p style="margin:5px 0;"><b>เรื่อง:</b> ${payload.subject}</p>
-                    <p style="margin:5px 0;"><b>ถึง:</b> ${payload.to_dept}</p>
-                </div>
-                <p>กรุณากดปุ่มด้านล่างเพื่อเปิดดูเอกสารฉบับสมบูรณ์ (หรือสั่งพิมพ์เป็น PDF):</p>
-                <br>
-                <a href="${viewLink}" style="background-color:#28a745; color:white; padding:12px 20px; text-decoration:none; border-radius:5px; font-weight:bold; font-size:16px;">
-                    📄 เปิดดูบันทึกข้อความ (ฉบับจริง)
-                </a>
-                <br><br>
-            `;
+            let fileHtml = '';
+            if (publicUrl) fileHtml = `<p>📎 <b>ไฟล์แนบ:</b> <a href="${publicUrl}">คลิกเพื่อดู</a></p>`;
 
             if (headEmail) {
                 await emailjs.send(CONFIG.emailServiceId, CONFIG.emailTemplateId_Master, { 
                     to_email: headEmail, 
-                    subject: `[Memo] บันทึกข้อความใหม่ ${payload.memo_no}`, 
-                    html_content: emailHtml
+                    subject: `[New Memo] เอกสารบันทึกข้อความ ${payload.memo_no}`, 
+                    html_content: `
+                        <h3>เรียน หัวหน้าแผนก${payload.from_dept},</h3>
+                        <p>มีการสร้างบันทึกข้อความ (Memo) ใหม่</p>
+                        <div style="background:#f8f9fa;padding:15px;border-left:4px solid #28a745;margin:10px 0;">
+                            <p style="margin:5px 0"><b>เลขที่:</b> ${payload.memo_no}</p>
+                            <p style="margin:5px 0"><b>เรื่อง:</b> ${payload.subject}</p>
+                        </div>
+                        <p>กดปุ่มด้านล่างเพื่อเปิดดูเอกสาร:</p>
+                        <br>
+                        <a href="${viewLink}" style="background-color:#28a745;color:white;padding:12px 20px;text-decoration:none;border-radius:5px;font-weight:bold;font-size:16px;display:inline-block;">
+                            📄 เปิดดูบันทึกข้อความ
+                        </a>
+                        <br><br>
+                        ${fileHtml}
+                    ` 
                 });
             }
 
-            alert('✅ บันทึกสำเร็จ! ระบบจะพาไปหน้าพิมพ์เอกสาร...');
-            // เด้งไปหน้า View ทันทีเพื่อให้คนทำปริ้นเก็บได้เลย
+            alert('✅ บันทึกสำเร็จ! ไปหน้าพิมพ์เอกสาร...');
             window.location.href = `view_memo.html?id=${memoId}`;
 
         } catch (err) {
@@ -145,7 +152,7 @@ if (memoForm) {
     });
 }
 
-// ================= [PR LOGIC - คงเดิม] =================
+// ================= PR LOGIC =================
 window.checkAdminPassword = function() {
     const input = document.getElementById('adminPassInput').value;
     const matchedDept = CONFIG.passwords[input];
@@ -372,7 +379,6 @@ async function loadPRForPrint() {
     } catch (err) { alert('Error: ' + err.message); }
 }
 
-// [NEW] ฟังก์ชันสำหรับหน้า view_memo.html
 async function loadMemoForPrint() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
@@ -380,21 +386,15 @@ async function loadMemoForPrint() {
     try {
         const { data: m, error } = await db.from('memos').select('*').eq('id', id).single();
         if (error) throw error;
-        
         document.getElementById('v_memo_no').innerText = m.memo_no;
         document.getElementById('v_date').innerText = new Date(m.date).toLocaleDateString('th-TH');
         document.getElementById('v_from').innerText = m.from_dept;
         document.getElementById('v_to').innerText = m.to_dept;
         document.getElementById('v_subject').innerText = m.subject;
         document.getElementById('v_content').innerText = m.content;
-
         if (m.attachment_url) {
-            const area = document.getElementById('v_attachment_area');
-            const link = document.getElementById('v_attachment_link');
-            if (area && link) {
-                area.style.display = 'block';
-                link.href = m.attachment_url;
-            }
+            document.getElementById('v_attachment_area').style.display = 'block';
+            document.getElementById('v_attachment_link').href = m.attachment_url;
         }
     } catch (err) { alert('Error: ' + err.message); }
 }
@@ -402,6 +402,4 @@ async function loadMemoForPrint() {
 if(document.getElementById('v_tableBody')) window.onload = loadPRForPrint;
 if(document.getElementById('v_content')) window.onload = loadMemoForPrint;
 
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Enter' && event.target.tagName === 'INPUT') { event.preventDefault(); return false; }
-});
+document.addEventListener('keydown', function(event) { if (event.key === 'Enter' && event.target.tagName === 'INPUT') { event.preventDefault(); return false; } });
