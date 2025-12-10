@@ -9,13 +9,21 @@ const CONFIG = {
     emailServiceId: 'service_tolm3pu',   
     emailTemplateId_Master: 'template_master', 
 
+    // ------------------------------------------------------------------
+    // [สำคัญ] ใส่ลิงก์เว็บของคุณ (ถ้าคุณอัปโหลดแล้ว)
+    // ถ้าเทสในเครื่อง ก็ปล่อยไว้ได้
+    // ------------------------------------------------------------------
+    siteUrl: '', 
+
     // [1] อีเมลหัวหน้าแผนก
+    // ** เนื่องจากคุณแจ้งแค่ jakkidmarat@gmail.com ผมเลยใส่ให้เหมือนกันหมดก่อน **
+    // ** ถ้ามีหัวหน้าคนอื่นจริง ให้มาแก้ตรงนี้ได้เลยครับ **
     departmentHeads: {
         'จัดซื้อ': 'jakkidmarat@gmail.com',      
-        'บัญชี': 'account@example.com',          
-        'ฝ่ายผลิต': 'production@example.com',    
-        'คลังสินค้า': 'warehouse@example.com',   
-        'ขาย/การตลาด': 'sales@example.com'       
+        'บัญชี': 'jakkidmarat@gmail.com',  
+        'ฝ่ายผลิต': 'jakkidmarat@gmail.com',    
+        'คลังสินค้า': 'jakkidmarat@gmail.com',   
+        'ขาย/การตลาด': 'jakkidmarat@gmail.com'       
     },
 
     // [2] ผู้ช่วย กก.
@@ -42,20 +50,12 @@ let currentUserRole = sessionStorage.getItem('userRole') || '';
 let currentUserDept = sessionStorage.getItem('userDept') || ''; 
 
 document.addEventListener("DOMContentLoaded", function() {
-    // [แก้ไข] โหลด Logo ให้ชัวร์ขึ้น
-    // ตรวจสอบว่าตัวแปร LOGO_BASE64 จากไฟล์ logo.js มาหรือยัง
+    // 1. โหลด Logo (แบบปลอดภัย)
     if (typeof LOGO_BASE64 !== 'undefined' && LOGO_BASE64) {
-        const logos = document.querySelectorAll('.app-logo');
-        logos.forEach(img => {
-            img.src = LOGO_BASE64;
-            // เพิ่ม Error handling ถ้ารูปโหลดไม่ได้
-            img.onerror = function() {
-                console.error("Logo failed to load. Check Base64 string.");
-                this.style.display = 'none'; // ซ่อนถ้ารูปเสีย
-            };
-        });
+        document.querySelectorAll('.app-logo').forEach(img => img.src = LOGO_BASE64);
     }
 
+    // 2. เช็ค Login หน้า Admin
     if (window.location.href.includes('admin.html')) {
         const overlay = document.getElementById('loginOverlay');
         if (overlay) {
@@ -70,7 +70,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-// ================= MEMO LOGIC =================
+// ================= MEMO LOGIC (พร้อมลิงก์ดูเอกสาร) =================
 const memoForm = document.getElementById('memoForm');
 if (memoForm) {
     memoForm.addEventListener('submit', async (e) => {
@@ -108,7 +108,8 @@ if (memoForm) {
             const { data, error } = await db.from('memos').insert([payload]).select();
             if (error) throw error;
 
-            const baseUrl = window.location.origin;
+            // สร้างลิงก์
+            const baseUrl = CONFIG.siteUrl && CONFIG.siteUrl.startsWith('http') ? CONFIG.siteUrl : window.location.origin;
             const memoId = data[0].id;
             const viewLink = `${baseUrl}/view_memo.html?id=${memoId}`;
 
