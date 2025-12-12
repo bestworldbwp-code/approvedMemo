@@ -19,18 +19,18 @@ const CONFIG = {
     // ** เนื่องจากคุณแจ้งแค่ jakkidmarat@gmail.com ผมเลยใส่ให้เหมือนกันหมดก่อน **
     // ** ถ้ามีหัวหน้าคนอื่นจริง ให้มาแก้ตรงนี้ได้เลยครับ **
     departmentHeads: {
-        'จัดซื้อ': 'jakkidmarat@gmail.com',      
-        'บัญชี': 'jakkidmarat@gmail.com',  
-        'ฝ่ายผลิต': 'jakkidmarat@gmail.com',    
-        'คลังสินค้า': 'jakkidmarat@gmail.com',   
-        'ขาย/การตลาด': 'jakkidmarat@gmail.com'       
+        'จัดซื้อ': 'bwipurchase@gmail.com',      
+        'บัญชี': 'bwipurchase@gmail.com',  
+        'ฝ่ายผลิต': 'bwipurchase@gmail.com',    
+        'คลังสินค้า': 'bwipurchase@gmail.com',   
+        'ขาย/การตลาด': 'bwipurchase@gmail.com'       
     },
 
     // [2] ผู้ช่วย กก.
-    managerEmail: 'bestworld.bwp328@gmail.com', 
+    managerEmail: 'asst.purbwp@gmail.com', 
 
     // [3] จัดซื้อ
-    purchasingEmail: 'hr.bpp.2564@gmail.com',
+    purchasingEmail: 'acc_bwi@hotmail.com',
 
     passwords: {
         '1001': 'จัดซื้อ',        
@@ -404,3 +404,4 @@ if(document.getElementById('v_tableBody')) window.onload = loadPRForPrint;
 if(document.getElementById('v_content')) window.onload = loadMemoForPrint;
 
 document.addEventListener('keydown', function(event) { if (event.key === 'Enter' && event.target.tagName === 'INPUT') { event.preventDefault(); return false; } });
+
