@@ -30,7 +30,7 @@
     <form id="memoForm">
         <div class="row g-3">
             <div class="col-12">
-                <label class="form-label">ส่วนราชการ (จากหน่วยงาน)</label>
+                <label class="form-label">จากหน่วยงาน</label>
                 <select id="m_from" class="form-select" required>
                     <option value="" selected disabled>-- กรุณาเลือกหน่วยงาน --</option>
                     <option value="จัดซื้อ">จัดซื้อ</option>
@@ -83,7 +83,6 @@
 
 <script src="logo.js"></script>
 <script>
-    // สคริปต์เสริมสำหรับโชว์โลโก้ (กันเหนียว)
     document.addEventListener("DOMContentLoaded", function() {
         if (typeof LOGO_BASE64 !== 'undefined') {
             document.querySelectorAll('.app-logo').forEach(img => img.src = LOGO_BASE64);
