@@ -5,25 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>บันทึกข้อความ (Memo)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <style>body { background-color: #f0f2f5; font-family: 'Sarabun', sans-serif; } .main-container { max-width: 800px; background: white; padding: 40px; margin: 30px auto; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }</style>
+    <style>
+        body { background-color: #f0f2f5; font-family: 'Sarabun', sans-serif; } 
+        .main-container { max-width: 800px; background: white; padding: 40px; margin: 30px auto; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .form-label { font-weight: bold; color: #333; }
+        .header-title { border-bottom: 2px solid #198754; padding-bottom: 10px; margin-bottom: 25px; }
+    </style>
 </head>
 <body>
+
 <div class="main-container">
-    <a href="index.html" class="btn btn-outline-secondary btn-sm mb-3">⬅️ กลับหน้าเมนูหลัก</a>
-    <div class="text-center mb-4">
+    <a href="index.html" class="btn btn-outline-secondary btn-sm mb-3"><i class="bi bi-arrow-left"></i> กลับหน้าเมนูหลัก</a>
+    
+    <div class="text-center mb-2">
         <img src="" class="app-logo mb-2" alt="Logo" style="height: 60px;">
         <h4 class="fw-bold m-0 text-success">บันทึกข้อความ (Memo)</h4>
     </div>
+    
+    <div class="header-title text-center text-muted small">แบบฟอร์มบันทึกข้อความภายใน</div>
+
     <form id="memoForm">
         <div class="row g-3">
-            <div class="col-md-6"><label class="form-label fw-bold">เลขที่เอกสาร</label><input type="text" id="m_no" class="form-control" placeholder="เช่น MEMO-66/001" required></div>
-            <div class="col-md-6"><label class="form-label fw-bold">วันที่</label><input type="date" id="m_date" class="form-control" required></div>
-            <div class="col-md-6">
-                <label class="form-label fw-bold">จากหน่วยงาน</label>
+            <div class="col-12">
+                <label class="form-label">ส่วนราชการ (จากหน่วยงาน)</label>
                 <select id="m_from" class="form-select" required>
-                    <option value="" selected disabled>-- เลือก --</option>
+                    <option value="" selected disabled>-- กรุณาเลือกหน่วยงาน --</option>
                     <option value="จัดซื้อ">จัดซื้อ</option>
                     <option value="บัญชี">บัญชี</option>
                     <option value="ฝ่ายผลิต(เป่า)">ฝ่ายผลิต(เป่า)</option>
@@ -33,14 +42,55 @@
                     <option value="ขาย/การตลาด">ขาย/การตลาด</option>
                 </select>
             </div>
-            <div class="col-md-6"><label class="form-label fw-bold">เรียน (ถึงใคร)</label><input type="text" id="m_to" class="form-control" required></div>
-            <div class="col-12"><label class="form-label fw-bold">เรื่อง</label><input type="text" id="m_subject" class="form-control" required></div>
-            <div class="col-12"><label class="form-label fw-bold">ข้อความ</label><textarea id="m_content" class="form-control" rows="6" required></textarea></div>
-            <div class="col-12"><label class="form-label fw-bold">แนบไฟล์ (ถ้ามี)</label><input type="file" id="m_attachment" class="form-control" accept=".pdf, .jpg, .jpeg, .png"></div>
+
+            <div class="col-md-6">
+                <label class="form-label">ที่ (เลขที่เอกสาร)</label>
+                <input type="text" id="m_no" class="form-control" placeholder="เช่น MEMO-66/001" required>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">วันที่</label>
+                <input type="date" id="m_date" class="form-control" required>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label">เรื่อง</label>
+                <input type="text" id="m_subject" class="form-control" placeholder="ระบุหัวข้อเรื่อง..." required>
+            </div>
+
+            <div class="col-12 mt-4">
+                <div class="input-group">
+                    <span class="input-group-text fw-bold bg-light">เรียน (ถึงใคร)</span>
+                    <input type="text" id="m_to" class="form-control" placeholder="ระบุชื่อผู้รับ หรือ ตำแหน่ง..." required>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label mt-2">ข้อความ / รายละเอียด</label>
+                <textarea id="m_content" class="form-control" rows="8" placeholder="พิมพ์รายละเอียดที่นี่..." required></textarea>
+            </div>
+            
+            <div class="col-12">
+                <label class="form-label">แนบไฟล์ (ถ้ามี)</label>
+                <input type="file" id="m_attachment" class="form-control" accept=".pdf, .jpg, .jpeg, .png">
+            </div>
         </div>
-        <button type="submit" class="btn btn-success w-100 py-2 fs-5 mt-4 shadow-sm" id="btnMemoSubmit">📤 ส่งบันทึกข้อความ</button>
+
+        <button type="submit" class="btn btn-success w-100 py-3 fs-5 mt-5 shadow-sm rounded-pill" id="btnMemoSubmit">
+            <i class="bi bi-send-fill me-2"></i> ส่งบันทึกข้อความ
+        </button>
     </form>
 </div>
-<script src="logo.js"></script><script src="script.js"></script>
+
+<script src="logo.js"></script>
+<script>
+    // สคริปต์เสริมสำหรับโชว์โลโก้ (กันเหนียว)
+    document.addEventListener("DOMContentLoaded", function() {
+        if (typeof LOGO_BASE64 !== 'undefined') {
+            document.querySelectorAll('.app-logo').forEach(img => img.src = LOGO_BASE64);
+        }
+    });
+</script>
+<script src="script.js"></script>
+
 </body>
 </html>
