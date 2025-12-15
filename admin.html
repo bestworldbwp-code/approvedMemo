@@ -5,19 +5,150 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Admin Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <style>body { background-color: #f0f2f5; font-family: 'Sarabun', sans-serif; } .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; } #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.95); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }</style>
+    
+    <style>
+        body { background-color: #f0f2f5; font-family: 'Sarabun', sans-serif; } 
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; } 
+        #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.95); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+    </style>
 </head>
 <body>
-<div id="loginOverlay"><div class="card shadow-lg p-4 text-center border-0" style="max-width: 350px; width: 90%;"><img src="" class="app-logo mb-3 mx-auto" alt="Logo" style="height: 60px;"><h4 class="mb-3 fw-bold">Admin Access</h4><input type="password" id="adminPassInput" class="form-control mb-3 text-center" placeholder="ใส่รหัสผ่าน..." inputmode="numeric"><button onclick="checkAdminPassword()" class="btn btn-primary w-100 btn-lg">เข้าสู่ระบบ</button><a href="index.html" class="btn btn-link text-muted mt-2 text-decoration-none">กลับหน้าหลัก</a></div></div>
-<div class="bg-white shadow-sm py-3 mb-4 text-center"><div class="container"><img src="" class="app-logo mb-2" alt="Logo" style="height: 50px;"><h5 class="fw-bold m-0 text-dark">บริษัท เบสท์เวิลด์ อินเตอร์พลาส จำกัด</h5><small class="text-muted">ระบบอนุมัติการจัดซื้อ (E-Approval)</small></div></div>
-<div class="container-fluid mb-5">
-    <div class="d-flex justify-content-between align-items-center mb-3"><div><h3 class="fw-bold text-primary m-0">👑 รายการขอซื้อ</h3><div class="btn-group mt-2 w-100"><button onclick="switchTab('pending')" class="btn btn-primary active btn-sm" id="btnPending">⏳ รออนุมัติ</button><button onclick="switchTab('history')" class="btn btn-outline-secondary btn-sm" id="btnHistory">📜 ประวัติ</button></div></div><button onclick="loadPRs()" class="btn btn-outline-primary btn-sm"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button></div>
-    <div class="card shadow-sm border-0"><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0 text-nowrap"><thead class="table-dark"><tr><th width="15%">เลขที่ PR</th><th width="20%">ผู้ขอ</th><th width="25%">สถานะ</th><th width="15%" class="text-center">จัดการ</th></tr></thead><tbody id="prTableBody"></tbody></table></div></div></div>
+
+<div id="loginOverlay">
+    <div class="card shadow-lg p-4 text-center border-0" style="max-width: 350px; width: 90%;">
+        <img src="" class="app-logo mb-3 mx-auto" alt="Logo" style="height: 60px;">
+        <h4 class="mb-3 fw-bold">Admin Access</h4>
+        <input type="password" id="adminPassInput" class="form-control mb-3 text-center" placeholder="ใส่รหัสผ่าน..." inputmode="numeric">
+        <button onclick="checkAdminPassword()" class="btn btn-primary w-100 btn-lg">เข้าสู่ระบบ</button>
+        <a href="index.html" class="btn btn-link text-muted mt-2 text-decoration-none">กลับหน้าหลัก</a>
+    </div>
 </div>
-<div class="modal fade" id="detailModal" tabindex="-1"><div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-sm-down"><div class="modal-content"><div class="modal-header bg-primary text-white"><h5 class="modal-title">📝 ตรวจสอบรายการ</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body bg-light"><div class="card mb-3 border-0 shadow-sm"><div class="card-body"><div class="row g-2 small"><div class="col-6"><strong>PR:</strong> <span id="m_pr_number" class="text-primary">-</span></div><div class="col-6"><strong>วันที่:</strong> <span id="m_required_date" class="text-danger">-</span></div><div class="col-6"><strong>ผู้ขอ:</strong> <span id="m_requester">-</span></div><div class="col-6"><strong>แผนก:</strong> <span id="m_department">-</span></div><div class="col-12"><strong>ไฟล์:</strong> <span id="m_attachment">-</span></div><div class="col-12"><strong>Note:</strong> <span id="m_remark" class="text-muted">-</span></div></div></div></div><div class="alert alert-info small py-1 mb-2"><i class="bi bi-info-circle"></i> ติ๊กถูก = อนุมัติ / ติ๊กออก = ไม่อนุมัติ</div><div class="card border-0 shadow-sm"><div class="card-body p-0 table-responsive"><table class="table table-bordered mb-0 small"><thead class="table-secondary"><tr></tr></thead><tbody id="m_itemsTable"></tbody></table></div></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button><button type="button" class="btn btn-success" onclick="finalizeApproval()">💾 บันทึกผล</button></div></div></div></div>
-<script src="logo.js"></script><script src="script.js"></script>
+
+<div class="bg-white shadow-sm py-3 mb-4 text-center">
+    <div class="container">
+        <img src="" class="app-logo mb-2" alt="Logo" style="height: 50px;">
+        <h5 class="fw-bold m-0 text-dark">บริษัท เบสท์เวิลด์ อินเตอร์พลาส จำกัด</h5>
+        <small class="text-muted">ระบบอนุมัติเอกสารออนไลน์</small>
+    </div>
+</div>
+
+<div class="container-fluid mb-5">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+        
+        <div>
+            <h3 class="fw-bold text-primary m-0" id="pageTitle">👑 ตรวจสอบรายการ</h3>
+            
+            <div class="d-flex gap-2 mt-3">
+                <div class="btn-group" role="group">
+                    <button type="button" onclick="switchDocType('pr')" class="btn btn-primary" id="btnTypePR">
+                        <i class="bi bi-cart-fill"></i> ดู PR
+                    </button>
+                    <button type="button" onclick="switchDocType('memo')" class="btn btn-outline-primary" id="btnTypeMemo">
+                        <i class="bi bi-file-text-fill"></i> ดู Memo
+                    </button>
+                </div>
+
+                <div class="vr"></div> <div class="btn-group" role="group">
+                    <button type="button" onclick="switchTab('pending')" class="btn btn-warning active" id="btnPending">
+                        ⏳ รออนุมัติ
+                    </button>
+                    <button type="button" onclick="switchTab('history')" class="btn btn-outline-secondary" id="btnHistory">
+                        📜 ประวัติ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="loadData()" class="btn btn-outline-primary btn-sm align-self-start align-self-md-center">
+            <i class="bi bi-arrow-clockwise"></i> รีเฟรชข้อมูล
+        </button>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 text-nowrap">
+                    <thead class="table-dark">
+                        <tr>
+                            <th width="15%">เลขที่เอกสาร</th>
+                            <th width="15%">วันที่</th>
+                            <th width="25%">รายละเอียด (จาก / เรื่อง)</th>
+                            <th width="20%">สถานะ</th>
+                            <th width="15%" class="text-center">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-sm-down">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-search"></i> ตรวจสอบรายละเอียด</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <div class="modal-body bg-light">
+                <div class="card mb-3 border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="row g-2 small">
+                            <div class="col-6"><strong>เลขที่:</strong> <span id="m_doc_no" class="text-primary fw-bold">-</span></div>
+                            <div class="col-6"><strong>วันที่:</strong> <span id="m_date" class="text-danger">-</span></div>
+                            <div class="col-6"><strong>จากหน่วยงาน:</strong> <span id="m_from">-</span></div>
+                            <div class="col-6"><strong>ไฟล์แนบ:</strong> <span id="m_attachment">-</span></div>
+                            <div class="col-12 mt-2"><strong>หัวข้อ / Note:</strong> <span id="m_subject_remark" class="text-muted fst-italic">-</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="pr_content_area">
+                    <div class="alert alert-info small py-1 mb-2">
+                        <i class="bi bi-info-circle-fill"></i> <strong>การอนุมัติ:</strong> ติ๊กถูก ☑️ = อนุมัติ / ติ๊กออก ⬜ = ไม่อนุมัติ
+                    </div>
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body p-0 table-responsive">
+                            <table class="table table-bordered mb-0 small">
+                                <thead class="table-secondary">
+                                    <tr></tr>
+                                </thead>
+                                <tbody id="m_itemsTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="memo_content_area" style="display:none;">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body bg-white rounded p-4">
+                            <h6 class="fw-bold border-bottom pb-2 mb-3">เนื้อหาบันทึกข้อความ:</h6>
+                            <p id="m_memo_text" style="white-space: pre-wrap; line-height: 1.6; font-size: 1.1em;"></p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                <button type="button" class="btn btn-success" onclick="finalizeApproval()">
+                    <i class="bi bi-check-circle-fill"></i> ยืนยันผลการพิจารณา
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="logo.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
