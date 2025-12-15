@@ -1,22 +1,18 @@
 // ================= 1. CONFIG (ตั้งค่าระบบ) =================
 const CONFIG = {
-    // ------------------------------------------------------------------
-    // [A] เชื่อมต่อ Supabase & EmailJS (ใช้ Key เดิมของคุณ)
-    // ------------------------------------------------------------------
+    // Supabase
     supaUrl: 'https://pufddwdcpugilwlavban.supabase.co', 
     supaKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1ZmRkd2RjcHVnaWx3bGF2YmFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzODY1MDUsImV4cCI6MjA3NDk2MjUwNX0.6dyYteDu6QSkTL9hIiaHw_2WeltSGSIoMSvx3OcEjN0', 
     
+    // EmailJS
     emailPublicKey: 'rEly1Il6Xz0qZwaSc',   
     emailServiceId: 'service_tolm3pu',   
     emailTemplateId_Master: 'template_master', 
 
-    // ใส่ลิงก์เว็บจริงของคุณ (ถ้ามี)
+    // ใส่ลิงก์เว็บของคุณ (ถ้ามี)
     siteUrl: '', 
 
-    // ------------------------------------------------------------------
-    // [B] อีเมล "ผู้จัดการแผนก" (Manager) - คนอนุมัติด่านแรก
-    // ** ต้องใส่อีเมลของหัวหน้าแต่ละแผนกให้ถูกต้องตรงนี้ **
-    // ------------------------------------------------------------------
+    // [1] อีเมลหัวหน้าแผนก
     departmentHeads: {
         'จัดซื้อ':           'jakkidmarat@gmail.com',
         'บัญชี':             'jakkidmarat@gmail.com',
@@ -27,31 +23,22 @@ const CONFIG = {
         'ขาย/การตลาด':       'jakkidmarat@gmail.com'
     },
 
-    // ------------------------------------------------------------------
-    // [C] อีเมล "ผู้ช่วยกรรมการ" (Assistant MD) - คนอนุมัติด่านสอง
-    // ------------------------------------------------------------------
+    // [2] ผู้ช่วย กก.
     managerEmail: 'bestworld.bwp328@gmail.com', 
 
-    // ------------------------------------------------------------------
-    // [D] อีเมล "ฝ่ายจัดซื้อ" (Purchasing) - คนรับเรื่องไปซื้อของ (จบงาน)
-    // ------------------------------------------------------------------
+    // [3] จัดซื้อ (รับเฉพาะ PR)
     purchasingEmail: 'hr.bpp.2564@gmail.com',
 
-    // ------------------------------------------------------------------
-    // [E] รหัสผ่านเข้าสู่ระบบ (แยกตามตำแหน่ง)
-    // ------------------------------------------------------------------
+    // รหัสผ่าน
     passwords: {
-        // --- ระดับ 1: หัวหน้าแผนก (อนุมัติลูกน้องตัวเอง) ---
-        '1001': 'จัดซื้อ',
-        '1002': 'บัญชี',
+        '1001': 'จัดซื้อ',        
+        '1002': 'บัญชี',          
         '1003': 'ฝ่ายผลิต(เป่า)',
         '1006': 'ฝ่ายผลิต(พิมพ์)',
         '1007': 'ซ่อมบำรุง',
-        '1004': 'คลังสินค้า',
-        '1005': 'ขาย/การตลาด',
-
-        // --- ระดับ 2: ผู้ช่วยกรรมการ (อนุมัติทุกแผนกต่อจากหัวหน้า) ---
-        '9999': 'MANAGER_ROLE' 
+        '1004': 'คลังสินค้า',     
+        '1005': 'ขาย/การตลาด',    
+        '9999': 'MANAGER_ROLE'    
     }
 };
 
@@ -61,6 +48,10 @@ if(typeof emailjs !== 'undefined') emailjs.init(CONFIG.emailPublicKey);
 
 let currentUserRole = sessionStorage.getItem('userRole') || ''; 
 let currentUserDept = sessionStorage.getItem('userDept') || ''; 
+let currentDocType = 'pr'; // 'pr' หรือ 'memo'
+let currentMode = 'pending'; 
+let allDocs = []; 
+let currentDoc = {};
 
 document.addEventListener("DOMContentLoaded", function() {
     if (typeof LOGO_BASE64 !== 'undefined' && LOGO_BASE64) {
@@ -72,7 +63,7 @@ document.addEventListener("DOMContentLoaded", function() {
             if (currentUserRole && sessionStorage.getItem('isAdmin') === 'true') {
                 overlay.style.display = 'none';
                 updateAdminUI();
-                loadPRs(); 
+                loadData(); 
             } else {
                 overlay.style.display = 'flex';
             }
@@ -80,7 +71,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-// ================= 3. MEMO LOGIC (ระบบบันทึกข้อความ) =================
+// ================= 3. MEMO FORM =================
 const memoForm = document.getElementById('memoForm');
 if (memoForm) {
     memoForm.addEventListener('submit', async (e) => {
@@ -88,7 +79,6 @@ if (memoForm) {
         const btn = document.getElementById('btnMemoSubmit');
         const originalText = btn.innerText;
         btn.disabled = true; 
-        
         try {
             let publicUrl = null;
             const fileInput = document.getElementById('m_attachment');
@@ -111,99 +101,255 @@ if (memoForm) {
                 subject: document.getElementById('m_subject').value,
                 content: document.getElementById('m_content').value,
                 attachment_url: publicUrl,
-                status: 'pending'
+                status: 'pending_head' 
             };
 
-            const { data, error } = await db.from('memos').insert([payload]).select();
+            const { error } = await db.from('memos').insert([payload]);
             if (error) throw error;
 
-            // Link สำหรับกดดู
-            const baseUrl = CONFIG.siteUrl && CONFIG.siteUrl.startsWith('http') ? CONFIG.siteUrl : window.location.origin;
-            const memoId = data[0].id;
-            const viewLink = `${baseUrl}/view_memo.html?id=${memoId}`;
-
-            btn.innerText = '⏳ ส่งอีเมล...';
-            
-            // ส่งหาหัวหน้าแผนกต้นสังกัด (ตาม Flow)
+            btn.innerText = '⏳ ส่งเมลหาหัวหน้า...';
             const headEmail = CONFIG.departmentHeads[payload.from_dept];
-            
-            let fileHtml = '';
-            if (publicUrl) fileHtml = `<p>📎 <b>ไฟล์แนบ:</b> <a href="${publicUrl}">คลิกเพื่อดู</a></p>`;
+            const adminLink = window.location.origin + '/admin.html';
 
             if (headEmail) {
                 await emailjs.send(CONFIG.emailServiceId, CONFIG.emailTemplateId_Master, { 
-                    to_email: headEmail, // ส่งหาหัวหน้าแผนก
-                    subject: `[Memo] มีบันทึกข้อความใหม่: ${payload.subject}`, 
-                    html_content: `
-                        <h3>เรียน หัวหน้าแผนก${payload.from_dept}</h3>
-                        <p>มีการสร้างบันทึกข้อความ (Memo) ใหม่จากทีมงานของคุณ</p>
-                        <hr>
-                        <p><b>เลขที่:</b> ${payload.memo_no}</p>
-                        <p><b>เรื่อง:</b> ${payload.subject}</p>
-                        <p><b>ถึง:</b> ${payload.to_dept}</p>
-                        <br>
-                        <a href="${viewLink}" style="background-color:#198754;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">📄 เปิดดูบันทึกข้อความ</a>
-                        <br><br>
-                        ${fileHtml}
-                    ` 
+                    to_email: headEmail, 
+                    subject: `[New Memo] ขออนุมัติ Memo: ${payload.memo_no}`, 
+                    html_content: `<h3>เรียน หัวหน้าแผนก${payload.from_dept}</h3><p>มีการสร้างบันทึกข้อความ (Memo) ใหม่ รอการตรวจสอบจากท่าน</p><p><b>เลขที่:</b> ${payload.memo_no}</p><p><b>เรื่อง:</b> ${payload.subject}</p><br><a href="${adminLink}">คลิกเพื่อเข้าสู่ระบบอนุมัติ</a>` 
                 });
             }
-
-            alert('✅ บันทึก Memo สำเร็จ! ระบบจะพาไปหน้าพิมพ์เอกสาร...');
-            window.location.href = `view_memo.html?id=${memoId}`;
-
-        } catch (err) {
-            console.error(err);
-            alert('Error: ' + err.message);
-            btn.disabled = false;
-            btn.innerText = originalText;
-        }
+            alert('✅ ส่ง Memo ให้หัวหน้าตรวจสอบเรียบร้อย!');
+            window.location.reload();
+        } catch (err) { console.error(err); alert('Error: ' + err.message); } finally { btn.disabled = false; btn.innerText = originalText; }
     });
 }
 
-// ================= 4. PR LOGIC (ระบบขอซื้อ - 3 ขั้นตอน) =================
+// ================= 4. ADMIN & APPROVAL LOGIC =================
 
-// --- 4.1 Login เช็คสิทธิ์ ---
 window.checkAdminPassword = function() {
     const input = document.getElementById('adminPassInput').value;
     const matchedDept = CONFIG.passwords[input];
-    
     if (matchedDept) {
         sessionStorage.setItem('isAdmin', 'true');
-        
-        if (matchedDept === 'MANAGER_ROLE') { 
-            // ล็อกอินเป็นผู้ช่วยกรรมการ (อนุมัติขั้น 2)
-            currentUserRole = 'manager'; 
-            currentUserDept = 'ALL'; 
-        } else { 
-            // ล็อกอินเป็นหัวหน้าแผนก (อนุมัติขั้น 1)
-            currentUserRole = 'head'; 
-            currentUserDept = matchedDept; 
-        }
-        
+        if (matchedDept === 'MANAGER_ROLE') { currentUserRole = 'manager'; currentUserDept = 'ALL'; } 
+        else { currentUserRole = 'head'; currentUserDept = matchedDept; }
         sessionStorage.setItem('userRole', currentUserRole);
         sessionStorage.setItem('userDept', currentUserDept);
-        
         document.getElementById('loginOverlay').style.display = 'none';
-        updateAdminUI(); 
-        loadPRs();
-    } else { 
-        alert("❌ รหัสผ่านไม่ถูกต้อง!"); 
-    }
+        updateAdminUI(); loadData();
+    } else { alert("❌ รหัสผ่านไม่ถูกต้อง!"); }
 }
 
 function updateAdminUI() {
-    const title = document.querySelector('h3');
+    const title = document.querySelector('#pageTitle');
     if (title) {
-        if (currentUserRole === 'head') {
-            title.innerText = `👑 ตรวจสอบรายการ (สำหรับหัวหน้าแผนก: ${currentUserDept})`;
-        } else if (currentUserRole === 'manager') {
-            title.innerText = '👑 รายการรออนุมัติ (สำหรับผู้ช่วยกรรมการ)';
-        }
+        const roleText = currentUserRole === 'head' ? `(หัวหน้า ${currentUserDept})` : `(ผู้ช่วย กก.)`;
+        title.innerText = `👑 ตรวจสอบรายการ ${roleText}`;
     }
 }
 
-// --- 4.2 ฟอร์มขอซื้อ (Step 0: ลูกน้อง -> หัวหน้า) ---
+window.switchDocType = function(type) {
+    currentDocType = type;
+    document.getElementById('btnTypePR').className = type === 'pr' ? 'btn btn-primary' : 'btn btn-outline-primary';
+    document.getElementById('btnTypeMemo').className = type === 'memo' ? 'btn btn-primary' : 'btn btn-outline-primary';
+    loadData();
+}
+
+window.switchTab = function(mode) {
+    currentMode = mode;
+    document.getElementById('btnPending').className = mode === 'pending' ? 'btn btn-warning active' : 'btn btn-outline-secondary';
+    document.getElementById('btnHistory').className = mode === 'history' ? 'btn btn-secondary active' : 'btn btn-outline-secondary';
+    loadData();
+}
+
+async function loadData() {
+    const tableBody = document.getElementById('dataTableBody');
+    if (!tableBody) return;
+    tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-4">⏳ กำลังโหลด...</td></tr>';
+    
+    try {
+        const tableName = currentDocType === 'pr' ? 'purchase_requests' : 'memos';
+        let query = db.from(tableName).select('*').order('created_at', { ascending: false });
+
+        if (currentMode === 'pending') {
+            if (currentUserRole === 'head') {
+                query = query.eq('status', 'pending_head');
+                if(currentDocType === 'pr') query = query.eq('department', currentUserDept);
+                else query = query.eq('from_dept', currentUserDept);
+            } else if (currentUserRole === 'manager') {
+                query = query.eq('status', 'pending_manager');
+            }
+        } else {
+            if (currentUserRole === 'head') {
+                query = query.neq('status', 'pending_head');
+                if(currentDocType === 'pr') query = query.eq('department', currentUserDept);
+                else query = query.eq('from_dept', currentUserDept);
+            } else {
+                query = query.in('status', ['processed', 'approved', 'rejected']);
+            }
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        allDocs = data;
+        tableBody.innerHTML = '';
+        
+        if (data.length === 0) { tableBody.innerHTML = `<tr><td colspan="5" class="text-center p-5 text-muted">ไม่พบรายการ</td></tr>`; return; }
+
+        data.forEach(doc => {
+            const date = new Date(doc.created_at || doc.date).toLocaleDateString('th-TH');
+            let docNo = currentDocType === 'pr' ? doc.pr_number : doc.memo_no;
+            let from = currentDocType === 'pr' ? `${doc.requester} (${doc.department})` : `${doc.from_dept} / ${doc.subject}`;
+            let statusText = doc.status;
+            if (doc.status === 'pending_head') statusText = 'รอหัวหน้าแผนก';
+            if (doc.status === 'pending_manager') statusText = 'รอผู้ช่วย กก.';
+            if (doc.status === 'processed') statusText = 'อนุมัติเรียบร้อย';
+
+            const row = `<tr><td><span class="fw-bold text-primary">${docNo}</span></td><td>${date}</td><td><div class="small">${from}</div></td><td><span class="badge bg-secondary">${statusText}</span></td><td class="text-center"><button onclick="openDetailModal('${doc.id}')" class="btn btn-outline-info btn-sm rounded-pill px-3">ตรวจสอบ</button></td></tr>`;
+            tableBody.innerHTML += row;
+        });
+
+    } catch (err) { console.error(err); tableBody.innerHTML = `<tr><td colspan="5" class="text-danger text-center">Error: ${err.message}</td></tr>`; }
+}
+
+window.openDetailModal = function(id) {
+    currentDoc = allDocs.find(d => String(d.id) === String(id));
+    if (!currentDoc) return;
+
+    if (currentDocType === 'pr') {
+        document.getElementById('pr_content_area').style.display = 'block';
+        document.getElementById('memo_content_area').style.display = 'none';
+        document.getElementById('m_doc_no').innerText = currentDoc.pr_number;
+        document.getElementById('m_date').innerText = new Date(currentDoc.required_date).toLocaleDateString('th-TH');
+        document.getElementById('m_from').innerText = currentDoc.requester + " (" + currentDoc.department + ")";
+        document.getElementById('m_subject_remark').innerText = currentDoc.header_remark || '-';
+        renderItemsTable();
+    } else {
+        document.getElementById('pr_content_area').style.display = 'none';
+        document.getElementById('memo_content_area').style.display = 'block';
+        document.getElementById('m_doc_no').innerText = currentDoc.memo_no;
+        document.getElementById('m_date').innerText = new Date(currentDoc.date).toLocaleDateString('th-TH');
+        document.getElementById('m_from').innerText = currentDoc.from_dept;
+        document.getElementById('m_subject_remark').innerText = currentDoc.subject;
+        document.getElementById('m_memo_text').innerText = currentDoc.content;
+    }
+
+    document.getElementById('m_attachment').innerHTML = currentDoc.attachment_url ? `<a href="${currentDoc.attachment_url}" target="_blank" class="btn btn-sm btn-outline-primary">📎 ดูไฟล์</a>` : '-';
+
+    const saveBtn = document.querySelector('.modal-footer .btn-success');
+    if (currentMode === 'history') {
+        saveBtn.style.display = 'none';
+    } else {
+        saveBtn.style.display = 'block';
+        saveBtn.disabled = false;
+        saveBtn.innerText = (currentUserRole === 'head') ? '✅ ผ่านการตรวจสอบ ➡️ ส่งผู้ช่วย กก.' : '✅ อนุมัติ ➡️ จบงาน';
+    }
+    new bootstrap.Modal(document.getElementById('detailModal')).show();
+}
+
+function renderItemsTable() {
+    const itemsTable = document.getElementById('m_itemsTable');
+    if (!itemsTable) return;
+    const tableContainer = itemsTable.parentElement; 
+    let thead = tableContainer.querySelector('thead');
+    if(!thead) { thead = document.createElement('thead'); thead.className = 'table-secondary'; tableContainer.prepend(thead); }
+    thead.innerHTML = `<tr><th class="text-center" width="5%"><input type="checkbox" id="selectAll" class="form-check-input" onclick="toggleSelectAll(this)" checked></th><th width="15%">รหัส</th><th>รายละเอียด</th><th class="text-center" width="10%">จำนวน</th><th class="text-center" width="10%">หน่วย</th><th width="25%">เหตุผล (ถ้าไม่อนุมัติ)</th></tr>`;
+    let htmlRows = '';
+    if (currentDoc.items) {
+        currentDoc.items.forEach((item, index) => {
+            if (currentUserRole === 'manager' && item.status === 'rejected') return;
+            const isChecked = (item.status === 'approved' || item.status === 'pending');
+            const reasonStyle = isChecked ? 'display:none;' : 'display:block;';
+            const statusStyle = isChecked ? 'display:inline;' : 'display:none;';
+            const rowClass = isChecked ? '' : 'table-danger';
+            htmlRows += `<tr id="tr-item-${index}" class="${rowClass}"><td class="text-center"><input type="checkbox" class="form-check-input item-checkbox" data-index="${index}" onchange="toggleItem(this, ${index})" ${isChecked ? 'checked' : ''}></td><td>${item.code || '-'}</td><td>${item.description}</td><td class="text-center">${item.quantity} ${item.unit || ''}</td><td class="text-center">${item.unit}</td><td><input type="text" class="form-control form-control-sm item-reason" id="reason-${index}" placeholder="เหตุผล..." value="${item.remark||''}" style="${reasonStyle}"><span id="status-text-${index}" class="text-success small fw-bold" style="${statusStyle}">✅ อนุมัติ</span></td></tr>`;
+        });
+    }
+    itemsTable.innerHTML = htmlRows;
+}
+window.toggleSelectAll = function(source) { document.querySelectorAll('.item-checkbox').forEach(cb => { cb.checked = source.checked; toggleItem(cb, cb.dataset.index); }); }
+window.toggleItem = function(checkbox, index) { const reasonInput = document.getElementById(`reason-${index}`); const statusText = document.getElementById(`status-text-${index}`); const row = document.getElementById(`tr-item-${index}`); if (checkbox.checked) { reasonInput.style.display = 'none'; statusText.style.display = 'inline'; row.classList.remove('table-danger'); } else { reasonInput.style.display = 'block'; reasonInput.focus(); statusText.style.display = 'none'; row.classList.add('table-danger'); } }
+
+// ฟังก์ชันจบงาน (Logic การอนุมัติ)
+window.finalizeApproval = async function() {
+    const btn = document.querySelector('.modal-footer .btn-success');
+    btn.disabled = true; btn.innerText = '⏳ กำลังประมวลผล...';
+
+    try {
+        let nextStatus = '';
+        const adminLink = window.location.origin + '/admin.html';
+        const tableName = currentDocType === 'pr' ? 'purchase_requests' : 'memos';
+        
+        // --- CASE 1: หัวหน้าแผนกอนุมัติ ---
+        if (currentUserRole === 'head') {
+            nextStatus = 'pending_manager'; 
+            
+            if (currentDocType === 'pr') {
+                document.querySelectorAll('.item-checkbox').forEach(cb => {
+                    const idx = cb.dataset.index;
+                    currentDoc.items[idx].status = cb.checked ? 'approved' : 'rejected';
+                    if (!cb.checked) currentDoc.items[idx].remark = document.getElementById(`reason-${idx}`).value;
+                });
+                await db.from(tableName).update({ status: nextStatus, items: currentDoc.items }).eq('id', currentDoc.id);
+            } else {
+                await db.from(tableName).update({ status: nextStatus }).eq('id', currentDoc.id);
+            }
+
+            // ส่งเมลหา ผช.กก. (เหมือนเดิม)
+            let docNo = currentDocType === 'pr' ? currentDoc.pr_number : currentDoc.memo_no;
+            await emailjs.send(CONFIG.emailServiceId, CONFIG.emailTemplateId_Master, { 
+                to_email: CONFIG.managerEmail, 
+                subject: `[Step 2] หัวหน้าตรวจสอบแล้ว: ${currentDocType.toUpperCase()} ${docNo}`, 
+                html_content: `<h3>เรียน ผู้ช่วยกรรมการผู้จัดการ</h3><p>รายการ ${currentDocType.toUpperCase()} เลขที่ <b>${docNo}</b> ผ่านการตรวจสอบขั้นต้นแล้ว</p><p>กรุณาพิจารณาอนุมัติ</p><br><a href="${adminLink}">คลิกเพื่อเข้าสู่ระบบ</a>` 
+            });
+            alert('✅ ส่งต่อให้ผู้ช่วยกรรมการเรียบร้อย!');
+        } 
+        
+        // --- CASE 2: ผู้ช่วยกรรมการอนุมัติ (Final) ---
+        else if (currentUserRole === 'manager') {
+            nextStatus = 'processed';
+            
+            if (currentDocType === 'pr') {
+                // (Logic PR: ส่งไปจัดซื้อ เหมือนเดิม)
+                document.querySelectorAll('.item-checkbox').forEach(cb => { const idx = cb.dataset.index; currentDoc.items[idx].status = cb.checked ? 'approved' : 'rejected'; });
+                await db.from(tableName).update({ status: nextStatus, items: currentDoc.items }).eq('id', currentDoc.id);
+                if (CONFIG.purchasingEmail) {
+                    await emailjs.send(CONFIG.emailServiceId, CONFIG.emailTemplateId_Master, { 
+                        to_email: CONFIG.purchasingEmail, 
+                        subject: `[Approved] สั่งซื้อสินค้า PR ${currentDoc.pr_number}`, 
+                        html_content: `<h3>เรียน ฝ่ายจัดซื้อ</h3><p>PR ${currentDoc.pr_number} อนุมัติแล้ว โปรดดำเนินการ</p>` 
+                    });
+                }
+            } else {
+                // [แก้ไข] Logic Memo: ส่งกลับหา "หัวหน้าแผนก" (เจ้าของเรื่อง)
+                await db.from(tableName).update({ status: nextStatus }).eq('id', currentDoc.id);
+                
+                const viewLink = window.location.origin + `/view_memo.html?id=${currentDoc.id}`;
+                const headEmail = CONFIG.departmentHeads[currentDoc.from_dept]; // หาอีเมลหัวหน้าแผนกต้นเรื่อง
+
+                if (headEmail) {
+                    await emailjs.send(CONFIG.emailServiceId, CONFIG.emailTemplateId_Master, { 
+                        to_email: headEmail, // ส่งกลับหัวหน้าแผนก
+                        subject: `[Approved] อนุมัติ Memo: ${currentDoc.memo_no}`, 
+                        html_content: `
+                            <h3>เรียน หัวหน้าแผนก${currentDoc.from_dept}</h3>
+                            <p>Memo เลขที่ <b>${currentDoc.memo_no}</b> ได้รับการอนุมัติจากผู้ช่วยกรรมการแล้ว</p>
+                            <p><b>เรื่อง:</b> ${currentDoc.subject}</p>
+                            <br>
+                            <a href="${viewLink}" style="background:green;color:white;padding:10px;">📄 ดูรายละเอียด Memo</a>
+                        ` 
+                    });
+                }
+            }
+            alert('✅ อนุมัติจบงานเรียบร้อย!');
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide();
+        loadData();
+    } catch (err) { console.error(err); alert('Error: ' + err.message); if(btn) btn.disabled = false; }
+}
+
+// PR Form Logic
 window.addItemRow = function() {
     const container = document.getElementById('itemsContainer');
     if (!container) return; 
@@ -223,14 +369,8 @@ if (prForm) {
         btn.disabled = true; 
         try {
             const dept = document.getElementById('department').value;
-            // 1. หาเมลหัวหน้าแผนกจาก Config
             const headEmail = CONFIG.departmentHeads[dept];
-            
-            if (!headEmail) { 
-                alert(`⚠️ ไม่พบอีเมลหัวหน้าแผนก: ${dept}`); 
-                throw new Error("Email config not found"); 
-            }
-            
+            if (!headEmail) { alert("⚠️ ไม่พบอีเมลหัวหน้าของแผนกนี้"); throw new Error("Email not found"); }
             let publicUrl = null;
             const fileInput = document.getElementById('attachment');
             if (fileInput.files.length > 0) {
@@ -245,240 +385,18 @@ if (prForm) {
             btn.innerText = '⏳ บันทึกข้อมูล...';
             const items = [];
             document.querySelectorAll('.item-row').forEach(row => { items.push({code: row.querySelector('.item-code').value, description: row.querySelector('.item-desc').value, quantity: row.querySelector('.item-qty').value, unit: row.querySelector('.item-unit').value, status: 'pending', remark: ''}); });
-            
-            const payload = { 
-                department: dept, 
-                pr_number: document.getElementById('pr_number').value, 
-                requester: document.getElementById('requester').value, 
-                email: document.getElementById('email').value, 
-                required_date: document.getElementById('required_date').value, 
-                header_remark: document.getElementById('header_remark').value, 
-                items: items, 
-                attachment_url: publicUrl, 
-                status: 'pending_head' // สถานะเริ่มต้น: รอหัวหน้าแผนก
-            };
-            
+            const payload = { department: dept, pr_number: document.getElementById('pr_number').value, requester: document.getElementById('requester').value, email: document.getElementById('email').value, required_date: document.getElementById('required_date').value, header_remark: document.getElementById('header_remark').value, items: items, attachment_url: publicUrl, status: 'pending_head' };
             const { error } = await db.from('purchase_requests').insert([payload]);
             if (error) throw error;
-            
-            btn.innerText = '⏳ ส่งอีเมลหาหัวหน้า...';
+            btn.innerText = '⏳ ส่งอีเมล...';
             const adminLink = window.location.origin + '/admin.html';
-            
-            // 2. ส่งเมลหาหัวหน้าแผนก
-            await emailjs.send(CONFIG.emailServiceId, CONFIG.emailTemplateId_Master, { 
-                to_email: headEmail, // ส่งไปหาหัวหน้าแผนก
-                subject: `[New PR] มีคำขอซื้อใหม่จาก: ${payload.requester} (${dept})`, 
-                html_content: `
-                    <h3>เรียน หัวหน้าแผนก${dept}</h3>
-                    <p>มีรายการขอซื้อ (PR) เข้ามาใหม่ รอการตรวจสอบจากท่าน</p>
-                    <p><b>เลขที่:</b> ${payload.pr_number}</p>
-                    <p><b>ผู้ขอ:</b> ${payload.requester}</p>
-                    <br>
-                    <a href="${adminLink}">คลิกเพื่อเข้าสู่ระบบอนุมัติ</a>
-                ` 
-            });
-            
-            alert(`✅ ส่งเรื่องถึงหัวหน้าแผนก${dept} เรียบร้อยแล้ว!`); 
-            window.location.reload();
+            await emailjs.send(CONFIG.emailServiceId, CONFIG.emailTemplateId_Master, { to_email: headEmail, subject: `[New Request] แผนก${dept} ขอตรวจสอบ PR ${payload.pr_number}`, html_content: `<h3>เรียน หัวหน้าแผนก${dept},</h3><p>มีรายการขอซื้อใหม่จาก <b>${payload.requester}</b> รอการตรวจสอบครับ</p><p>เลขที่ PR: ${payload.pr_number}</p><p><a href="${adminLink}">คลิกเพื่อเข้าสู่ระบบ</a></p>` });
+            alert(`✅ ส่งเรื่องถึงหัวหน้าแผนก${dept} เรียบร้อยแล้ว!`); window.location.reload();
         } catch (err) { console.error(err); alert('Error: ' + err.message); } finally { btn.disabled = false; btn.innerText = originalText; }
     });
 }
 
-// --- 4.3 ระบบอนุมัติ (Step 1 & Step 2) ---
-let allPRs = []; let currentPR = {}; let currentMode = 'pending'; 
-
-window.switchTab = function(mode) {
-    currentMode = mode;
-    if (mode === 'pending') { document.getElementById('btnPending').className = 'btn btn-primary active btn-sm'; document.getElementById('btnHistory').className = 'btn btn-outline-secondary btn-sm'; } 
-    else { document.getElementById('btnHistory').className = 'btn btn-secondary active btn-sm'; document.getElementById('btnPending').className = 'btn btn-outline-primary btn-sm'; }
-    loadPRs();
-}
-
-async function loadPRs() {
-    const tableBody = document.getElementById('prTableBody');
-    if (!tableBody) return;
-    tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-4">⏳ กำลังโหลด...</td></tr>';
-    try {
-        let query = db.from('purchase_requests').select('*').order('created_at', { ascending: false });
-        
-        if (currentMode === 'pending') {
-            // โหมดรออนุมัติ
-            if (!currentUserRole) { tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">กรุณาเข้าสู่ระบบใหม่</td></tr>'; return; }
-            
-            if (currentUserRole === 'head') {
-                // หัวหน้า: เห็นแค่ "รอหัวหน้า" ของ "แผนกตัวเอง"
-                query = query.eq('status', 'pending_head').eq('department', currentUserDept);
-            } else if (currentUserRole === 'manager') {
-                // ผู้ช่วย กก.: เห็น "รอผู้ช่วย กก." (ที่ผ่านหัวหน้ามาแล้ว)
-                query = query.eq('status', 'pending_manager');
-            }
-        } else {
-            // โหมดประวัติ
-            if (currentUserRole === 'head') query = query.neq('status', 'pending_head').eq('department', currentUserDept);
-            else query = query.in('status', ['processed', 'approved', 'rejected']);
-        }
-        
-        const { data, error } = await query;
-        if (error) throw error;
-        allPRs = data;
-        tableBody.innerHTML = '';
-        if (data.length === 0) { tableBody.innerHTML = `<tr><td colspan="6" class="text-center p-5 text-muted">ไม่พบรายการ</td></tr>`; return; }
-        
-        data.forEach(pr => {
-            const createdDate = new Date(pr.created_at).toLocaleDateString('th-TH');
-            let attachBtn = pr.attachment_url ? `<a href="${pr.attachment_url}" target="_blank" class="btn btn-sm btn-outline-secondary">📎</a>` : '-';
-            let actionBtn = currentMode === 'pending' ? `<button onclick="openDetailModal('${pr.id}')" class="btn btn-primary btn-sm rounded-pill px-3">🔍 ตรวจสอบ</button>` : `<button onclick="openDetailModal('${pr.id}')" class="btn btn-outline-info btn-sm rounded-pill px-3">📄 ดู</button>`;
-            
-            let statusText = pr.status;
-            if (pr.status === 'pending_head') statusText = `รอหัวหน้าแผนก`;
-            if (pr.status === 'pending_manager') statusText = 'รอผู้ช่วย กก.';
-            if (pr.status === 'processed') statusText = 'อนุมัติแล้ว/ส่งจัดซื้อ';
-
-            const row = `<tr><td><span class="fw-bold text-primary">${pr.pr_number}</span></td><td>${createdDate}</td><td><div class="fw-bold">${pr.requester}</div><small class="text-muted">${pr.department}</small></td><td><span class="badge bg-secondary">${statusText}</span></td><td class="text-center">${attachBtn}</td><td class="text-center">${actionBtn}</td></tr>`;
-            tableBody.innerHTML += row;
-        });
-    } catch (err) { console.error(err); tableBody.innerHTML = `<tr><td colspan="6" class="text-danger text-center">Error: ${err.message}</td></tr>`; }
-}
-
-window.openDetailModal = function(id) {
-    currentPR = allPRs.find(p => String(p.id) === String(id));
-    if (!currentPR) return;
-    document.getElementById('m_pr_number').innerText = currentPR.pr_number;
-    document.getElementById('m_required_date').innerText = new Date(currentPR.required_date).toLocaleDateString('th-TH');
-    document.getElementById('m_requester').innerText = currentPR.requester;
-    document.getElementById('m_department').innerText = currentPR.department;
-    document.getElementById('m_remark').innerText = currentPR.header_remark || '-';
-    document.getElementById('m_attachment').innerHTML = currentPR.attachment_url ? `<a href="${currentPR.attachment_url}" target="_blank" class="btn btn-sm btn-outline-primary">📎 ดูไฟล์</a>` : '-';
-    renderItemsTable();
-    const saveBtn = document.querySelector('.modal-footer .btn-success');
-    
-    if (currentMode === 'history') { 
-        saveBtn.style.display = 'none'; 
-    } else {
-        saveBtn.style.display = 'block'; 
-        saveBtn.disabled = false;
-        // เปลี่ยนข้อความปุ่มตามตำแหน่ง
-        saveBtn.innerText = (currentUserRole === 'head') ? 'ผ่านการตรวจสอบ ➡️ ส่งต่อผู้ช่วย กก.' : '✅ อนุมัติ ➡️ ส่งฝ่ายจัดซื้อ';
-    }
-    new bootstrap.Modal(document.getElementById('detailModal')).show();
-}
-
-function renderItemsTable() {
-    const itemsTable = document.getElementById('m_itemsTable');
-    if (!itemsTable) return;
-    const tableContainer = itemsTable.parentElement; 
-    let thead = tableContainer.querySelector('thead');
-    if(!thead) { thead = document.createElement('thead'); thead.className = 'table-secondary'; tableContainer.prepend(thead); }
-    thead.innerHTML = `<tr><th class="text-center" width="5%"><input type="checkbox" id="selectAll" class="form-check-input" onclick="toggleSelectAll(this)" checked></th><th width="15%">รหัส</th><th>รายละเอียด</th><th class="text-center" width="10%">จำนวน</th><th class="text-center" width="10%">หน่วย</th><th width="25%">เหตุผล (ถ้าไม่อนุมัติ)</th></tr>`;
-    let htmlRows = '';
-    if (currentPR.items) {
-        currentPR.items.forEach((item, index) => {
-            if (currentUserRole === 'manager' && item.status === 'rejected') return; // ซ่อนรายการที่หัวหน้าปัดตกไปแล้ว
-            const isChecked = (item.status === 'approved' || item.status === 'pending');
-            const reasonStyle = isChecked ? 'display:none;' : 'display:block;';
-            const statusStyle = isChecked ? 'display:inline;' : 'display:none;';
-            const reasonVal = item.remark || '';
-            const rowClass = isChecked ? '' : 'table-danger';
-            htmlRows += `<tr id="tr-item-${index}" class="${rowClass}"><td class="text-center"><input type="checkbox" class="form-check-input item-checkbox" data-index="${index}" onchange="toggleItem(this, ${index})" ${isChecked ? 'checked' : ''}></td><td>${item.code || '-'}</td><td>${item.description}</td><td class="text-center">${item.quantity} ${item.unit || ''}</td><td class="text-center">${item.unit}</td><td><input type="text" class="form-control form-control-sm item-reason" id="reason-${index}" placeholder="เหตุผล..." value="${reasonVal}" style="${reasonStyle}"><span id="status-text-${index}" class="text-success small fw-bold" style="${statusStyle}">✅ อนุมัติ</span></td></tr>`;
-        });
-    }
-    if (htmlRows === '') htmlRows = '<tr><td colspan="6" class="text-center p-3 text-muted">ไม่พบรายการที่ต้องอนุมัติ</td></tr>';
-    itemsTable.innerHTML = htmlRows;
-    if(currentMode === 'history') { itemsTable.querySelectorAll('input, select').forEach(el => el.disabled = true); if(document.getElementById('selectAll')) document.getElementById('selectAll').disabled = true; }
-}
-window.toggleSelectAll = function(source) { document.querySelectorAll('.item-checkbox').forEach(cb => { cb.checked = source.checked; toggleItem(cb, cb.dataset.index); }); }
-window.toggleItem = function(checkbox, index) { const reasonInput = document.getElementById(`reason-${index}`); const statusText = document.getElementById(`status-text-${index}`); const row = document.getElementById(`tr-item-${index}`); if (checkbox.checked) { reasonInput.style.display = 'none'; statusText.style.display = 'inline'; row.classList.remove('table-danger'); } else { reasonInput.style.display = 'block'; reasonInput.focus(); statusText.style.display = 'none'; row.classList.add('table-danger'); } }
-
-window.finalizeApproval = async function() {
-    const checkboxes = document.querySelectorAll('.item-checkbox');
-    let hasRejectedWithoutReason = false;
-    checkboxes.forEach(cb => {
-        const idx = cb.dataset.index;
-        const reasonInput = document.getElementById(`reason-${idx}`);
-        if (cb.checked) { currentPR.items[idx].status = 'approved'; currentPR.items[idx].remark = ''; } 
-        else { currentPR.items[idx].status = 'rejected'; currentPR.items[idx].remark = reasonInput.value.trim(); if (!currentPR.items[idx].remark) { hasRejectedWithoutReason = true; reasonInput.classList.add('is-invalid'); } }
-    });
-    if (hasRejectedWithoutReason) { alert('กรุณาระบุเหตุผลรายการที่ไม่อนุมัติ'); return; }
-    
-    if (!confirm("ยืนยันผลการพิจารณา?")) return;
-    const btn = document.querySelector('.modal-footer .btn-success');
-    if(btn) { btn.disabled = true; btn.innerText = '⏳ กำลังประมวลผล...'; }
-    
-    try {
-        let nextStatus = '';
-        const adminLink = window.location.origin + '/admin.html';
-        
-        // --- CASE 1: หัวหน้าแผนกอนุมัติ (Step 1) ---
-        if (currentUserRole === 'head') {
-            nextStatus = 'pending_manager'; // ส่งต่อให้ผู้ช่วย กก.
-            await db.from('purchase_requests').update({ status: nextStatus, items: currentPR.items }).eq('id', currentPR.id);
-            
-            // ส่งเมลหา ผู้ช่วยกรรมการ
-            await emailjs.send(CONFIG.emailServiceId, CONFIG.emailTemplateId_Master, { 
-                to_email: CONFIG.managerEmail, 
-                subject: `[Step 2] หัวหน้าแผนก${currentPR.department} ตรวจสอบแล้ว: PR ${currentPR.pr_number}`, 
-                html_content: `
-                    <h3>เรียน ผู้ช่วยกรรมการผู้จัดการ</h3>
-                    <p>หัวหน้าแผนก ${currentPR.department} ได้ตรวจสอบเบื้องต้นแล้ว</p>
-                    <p>กรุณาพิจารณาอนุมัติขั้นตอนสุดท้าย</p>
-                    <br>
-                    <a href="${adminLink}">คลิกเพื่อเข้าสู่ระบบ</a>
-                ` 
-            });
-            alert('✅ บันทึกผลแล้ว ส่งต่อให้ผู้ช่วยกรรมการเรียบร้อย!');
-        } 
-        // --- CASE 2: ผู้ช่วยกรรมการอนุมัติ (Step 2 - Final) ---
-        else if (currentUserRole === 'manager') {
-            nextStatus = 'processed'; // จบกระบวนการ
-            await db.from('purchase_requests').update({ status: nextStatus, items: currentPR.items }).eq('id', currentPR.id);
-            
-            const printLink = window.location.origin + `/view_pr.html?id=${currentPR.id}`;
-            const printApprovedLink = printLink + "&filter=approved";
-            
-            // ตารางสรุปสำหรับเมล
-            let approvedTable = `<table style="border:1px solid #ddd;border-collapse:collapse;width:100%;"><tr><th style="border:1px solid #ddd;padding:5px;">รายการ</th><th style="border:1px solid #ddd;padding:5px;">จำนวน</th></tr>`;
-            let hasApprovedItems = false;
-            currentPR.items.forEach(i => {
-                if (i.status === 'approved') { 
-                    hasApprovedItems = true; 
-                    approvedTable += `<tr><td style="border:1px solid #ddd;padding:5px;">${i.description}</td><td style="border:1px solid #ddd;padding:5px;">${i.quantity}</td></tr>`; 
-                }
-            });
-            approvedTable += `</table>`;
-
-            // ส่งเมลหา User (แจ้งผล)
-            if (currentPR.email) { 
-                await emailjs.send(CONFIG.emailServiceId, CONFIG.emailTemplateId_Master, { 
-                    to_email: currentPR.email, 
-                    subject: `[Approved] PR ${currentPR.pr_number} ได้รับการอนุมัติแล้ว`, 
-                    html_content: `<h3>เรียนคุณ ${currentPR.requester}</h3><p>ใบขอซื้อของท่านได้รับการอนุมัติเรียบร้อยแล้ว</p><br><a href="${printLink}">ดูรายละเอียด</a>` 
-                }); 
-            }
-            
-            // ส่งเมลหา ฝ่ายจัดซื้อ (เพื่อให้ดำเนินการซื้อ)
-            if (hasApprovedItems && CONFIG.purchasingEmail) { 
-                await emailjs.send(CONFIG.emailServiceId, CONFIG.emailTemplateId_Master, { 
-                    to_email: CONFIG.purchasingEmail, // ส่งหาฝ่ายจัดซื้อ
-                    subject: `[To Purchasing] สั่งซื้อสินค้า PR ${currentPR.pr_number}`, 
-                    html_content: `
-                        <h3>เรียน ฝ่ายจัดซื้อ</h3>
-                        <p>รายการ PR ${currentPR.pr_number} อนุมัติโดยผู้ช่วยกรรมการแล้ว กรุณาดำเนินการสั่งซื้อ</p>
-                        <hr>
-                        ${approvedTable}
-                        <br>
-                        <a href="${printApprovedLink}" style="background:green;color:white;padding:10px;text-decoration:none;">🛒 พิมพ์ใบสั่งซื้อ</a>
-                    ` 
-                }); 
-            }
-            alert('✅ อนุมัติจบงาน! ส่งเรื่องให้ฝ่ายจัดซื้อเรียบร้อย');
-        }
-        
-        bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide();
-        loadPRs();
-    } catch (err) { console.error(err); alert('Error: ' + err.message); if(btn) btn.disabled = false; }
-}
-
-// --- 4.4 โหลดข้อมูลหน้าพิมพ์ ---
+// Print Loaders
 async function loadPRForPrint() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
@@ -495,15 +413,8 @@ async function loadPRForPrint() {
         document.getElementById('v_remark').innerText = pr.header_remark || '-';
         document.getElementById('v_sign_requester').innerText = `${pr.requester}`;
         document.getElementById('v_required_date').innerText = new Date(pr.required_date).toLocaleDateString('th-TH');
-        
-        // ลายเซ็นอิเล็กทรอนิกส์ (ชื่อ)
-        if (pr.status === 'pending_manager' || pr.status === 'processed') { 
-            document.getElementById('v_sign_head').innerHTML = `( หัวหน้าแผนก${pr.department} )<br><span class="text-success small" style="font-size:10px;">อนุมัติออนไลน์</span>`; 
-        }
-        if (pr.status === 'processed') { 
-            document.getElementById('v_sign_manager').innerHTML = '( เบญจมาศ ถิ่นจันทร์ )<br><span class="text-success small" style="font-size:10px;">อนุมัติออนไลน์</span>'; 
-        }
-        
+        if (pr.status === 'pending_manager' || pr.status === 'processed') { document.getElementById('v_sign_head').innerHTML = `( หัวหน้าแผนก${pr.department} )<br><span class="text-success small" style="font-size:10px;">อนุมัติออนไลน์</span>`; }
+        if (pr.status === 'processed') { document.getElementById('v_sign_manager').innerHTML = '( เบญจมาศ ถิ่นจันทร์ )<br><span class="text-success small" style="font-size:10px;">อนุมัติออนไลน์</span>'; }
         const tbody = document.getElementById('v_tableBody'); tbody.innerHTML = '';
         let displayItems = pr.items;
         if (filter === 'approved') displayItems = pr.items.filter(item => item.status === 'approved');
