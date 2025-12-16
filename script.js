@@ -1,10 +1,11 @@
 // ================= 1. CONFIG (ตั้งค่าระบบ) =================
 const CONFIG = {
-    // Supabase URL & Key
+    // --------------------------------------------------------
+    // [A] ตั้งค่าการเชื่อมต่อ (Supabase & EmailJS)
+    // --------------------------------------------------------
     supaUrl: 'https://pufddwdcpugilwlavban.supabase.co', 
     supaKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1ZmRkd2RjcHVnaWx3bGF2YmFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzODY1MDUsImV4cCI6MjA3NDk2MjUwNX0.6dyYteDu6QSkTL9hIiaHw_2WeltSGSIoMSvx3OcEjN0', 
     
-    // EmailJS Keys
     emailPublicKey: 'rEly1Il6Xz0qZwaSc',   
     emailServiceId: 'service_tolm3pu',   
     emailTemplateId_Master: 'template_master', 
@@ -12,7 +13,9 @@ const CONFIG = {
     // ใส่ลิงก์เว็บของคุณ (ถ้ามี)
     siteUrl: '', 
 
-    // [1] อีเมลหัวหน้าแผนก
+    // --------------------------------------------------------
+    // [B] รายชื่อหัวหน้าแผนก (สำหรับส่งอีเมลขออนุมัติขั้น 1)
+    // --------------------------------------------------------
     departmentHeads: {
         'จัดซื้อ':           'jakkidmarat@gmail.com',
         'บัญชี':             'jakkidmarat@gmail.com',
@@ -23,13 +26,15 @@ const CONFIG = {
         'ขาย/การตลาด':       'jakkidmarat@gmail.com'
     },
 
-    // [2] ผู้ช่วย กก.
+    // --------------------------------------------------------
+    // [C] อีเมลผู้ช่วยกรรมการ (อนุมัติขั้น 2) & ฝ่ายจัดซื้อ (รับงานต่อ)
+    // --------------------------------------------------------
     managerEmail: 'bestworld.bwp328@gmail.com', 
-
-    // [3] ฝ่ายจัดซื้อ
     purchasingEmail: 'hr.bpp.2564@gmail.com',
 
-    // รหัสผ่าน
+    // --------------------------------------------------------
+    // [D] รหัสผ่านเข้าสู่ระบบ Admin
+    // --------------------------------------------------------
     passwords: {
         '1001': 'จัดซื้อ',
         '1002': 'บัญชี',
@@ -38,25 +43,27 @@ const CONFIG = {
         '1007': 'ซ่อมบำรุง',
         '1004': 'คลังสินค้า',
         '1005': 'ขาย/การตลาด',
-        '9999': 'MANAGER_ROLE' 
+        '9999': 'MANAGER_ROLE' // ผู้ช่วยกรรมการ
     }
 };
 
-// ================= 2. SYSTEM START =================
+// ================= 2. SYSTEM START (เริ่มระบบ) =================
 const db = supabase.createClient(CONFIG.supaUrl, CONFIG.supaKey);
 if(typeof emailjs !== 'undefined') emailjs.init(CONFIG.emailPublicKey);
 
 let currentUserRole = sessionStorage.getItem('userRole') || ''; 
 let currentUserDept = sessionStorage.getItem('userDept') || ''; 
-let currentDocType = 'pr';
+let currentDocType = 'pr'; // ค่าเริ่มต้น: ดู PR
 let currentMode = 'pending'; 
 let allDocs = []; 
 let currentDoc = {};
 
 document.addEventListener("DOMContentLoaded", function() {
+    // โหลด Logo
     if (typeof LOGO_BASE64 !== 'undefined') {
         document.querySelectorAll('.app-logo').forEach(img => img.src = LOGO_BASE64);
     }
+    // ตรวจสอบหน้า Admin
     if (window.location.href.includes('admin.html')) {
         const overlay = document.getElementById('loginOverlay');
         if (overlay) {
@@ -71,7 +78,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-// ================= 3. MEMO FORM =================
+// ================= 3. MEMO FORM (บันทึกข้อความ) =================
 const memoForm = document.getElementById('memoForm');
 if (memoForm) {
     memoForm.addEventListener('submit', async (e) => {
@@ -79,7 +86,9 @@ if (memoForm) {
         const btn = document.getElementById('btnMemoSubmit');
         const originalText = btn.innerText;
         btn.disabled = true; 
+        
         try {
+            // 1. อัปโหลดไฟล์แนบ (ถ้ามี)
             let publicUrl = null;
             const fileInput = document.getElementById('m_attachment');
             if (fileInput && fileInput.files.length > 0) {
@@ -93,6 +102,7 @@ if (memoForm) {
                 publicUrl = urlData.publicUrl;
             }
 
+            // 2. บันทึกข้อมูลลง DB
             btn.innerText = '⏳ บันทึกข้อมูล...';
             const payload = {
                 memo_no: document.getElementById('m_no').value,
@@ -102,12 +112,13 @@ if (memoForm) {
                 subject: document.getElementById('m_subject').value,
                 content: document.getElementById('m_content').value,
                 attachment_url: publicUrl,
-                status: 'pending_head'
+                status: 'pending_head' // สถานะเริ่มต้น
             };
 
             const { error } = await db.from('memos').insert([payload]);
             if (error) throw error;
 
+            // 3. ส่งเมลหาหัวหน้าแผนก
             btn.innerText = '⏳ ส่งเมลหาหัวหน้า...';
             const headEmail = CONFIG.departmentHeads[payload.from_dept];
             const adminLink = window.location.origin + '/admin.html';
@@ -129,19 +140,56 @@ if (memoForm) {
             alert('✅ ส่ง Memo ให้หัวหน้าตรวจสอบเรียบร้อย!');
             window.location.reload();
 
-        } catch (err) { console.error(err); alert('Error: ' + err.message); } finally { btn.disabled = false; btn.innerText = originalText; }
+        } catch (err) {
+            console.error(err);
+            alert('Error: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
     });
 }
 
-// ================= 4. PR FORM =================
+// ================= 4. PR FORM (ใบขอซื้อ) =================
+
+// ฟังก์ชันเพิ่มแถวรายการสินค้า (HTML แบบเต็ม ไม่ย่อ)
 window.addItemRow = function() {
     const container = document.getElementById('itemsContainer');
     if (!container) return; 
     const rowId = Date.now(); 
-    const html = `<div class="item-row border p-3 mb-3 rounded bg-light shadow-sm" id="row-${rowId}"><div class="row g-3"><div class="col-md-3"><label class="small text-muted">รหัสสินค้า</label><input type="text" class="form-control item-code"></div><div class="col-md-5"><label class="small text-muted">รายละเอียด</label><input type="text" class="form-control item-desc" required></div><div class="col-md-2"><label class="small text-muted">จำนวน</label><input type="number" class="form-control item-qty" required></div><div class="col-md-2"><label class="small text-muted">หน่วย</label><input type="text" class="form-control item-unit"></div></div><div class="text-end mt-2"><button type="button" class="btn btn-outline-danger btn-sm" onclick="removeRow('${rowId}')">🗑️ ลบรายการนี้</button></div></div>`;
+    const html = `
+        <div class="item-row border p-3 mb-3 rounded bg-light shadow-sm" id="row-${rowId}">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="small text-muted">รหัสสินค้า</label>
+                    <input type="text" class="form-control item-code">
+                </div>
+                <div class="col-md-5">
+                    <label class="small text-muted">รายละเอียด</label>
+                    <input type="text" class="form-control item-desc" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="small text-muted">จำนวน</label>
+                    <input type="number" class="form-control item-qty" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="small text-muted">หน่วย</label>
+                    <input type="text" class="form-control item-unit">
+                </div>
+            </div>
+            <div class="text-end mt-2">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeRow('${rowId}')">🗑️ ลบรายการนี้</button>
+            </div>
+        </div>`;
     container.insertAdjacentHTML('beforeend', html);
 }
-window.removeRow = function(id) { document.getElementById(`row-${id}`)?.remove(); }
+
+// ฟังก์ชันลบแถว
+window.removeRow = function(id) { 
+    document.getElementById(`row-${id}`)?.remove(); 
+}
+
+// เพิ่มแถวแรกอัตโนมัติ
 if (document.getElementById('itemsContainer')) window.addItemRow();
 
 const prForm = document.getElementById('prForm');
@@ -154,8 +202,13 @@ if (prForm) {
         try {
             const dept = document.getElementById('department').value;
             const headEmail = CONFIG.departmentHeads[dept];
-            if (!headEmail) { alert("⚠️ ไม่พบอีเมลหัวหน้าของแผนกนี้"); throw new Error("Email not found"); }
             
+            if (!headEmail) { 
+                alert("⚠️ ไม่พบอีเมลหัวหน้าของแผนกนี้ กรุณาตรวจสอบ Config"); 
+                throw new Error("Email not found"); 
+            }
+            
+            // 1. อัปโหลดไฟล์
             let publicUrl = null;
             const fileInput = document.getElementById('attachment');
             if (fileInput.files.length > 0) {
@@ -168,6 +221,7 @@ if (prForm) {
                 publicUrl = urlData.publicUrl;
             }
 
+            // 2. เก็บข้อมูลรายการสินค้า
             btn.innerText = '⏳ บันทึกข้อมูล...';
             const items = [];
             document.querySelectorAll('.item-row').forEach(row => { 
@@ -176,15 +230,28 @@ if (prForm) {
                     description: row.querySelector('.item-desc').value, 
                     quantity: row.querySelector('.item-qty').value, 
                     unit: row.querySelector('.item-unit').value, 
-                    status: 'pending', remark: ''
+                    status: 'pending', 
+                    remark: ''
                 }); 
             });
 
-            const payload = { department: dept, pr_number: document.getElementById('pr_number').value, requester: document.getElementById('requester').value, email: document.getElementById('email').value, required_date: document.getElementById('required_date').value, header_remark: document.getElementById('header_remark').value, items: items, attachment_url: publicUrl, status: 'pending_head' };
+            // 3. บันทึกลงฐานข้อมูล
+            const payload = { 
+                department: dept, 
+                pr_number: document.getElementById('pr_number').value, 
+                requester: document.getElementById('requester').value, 
+                email: document.getElementById('email').value, 
+                required_date: document.getElementById('required_date').value, 
+                header_remark: document.getElementById('header_remark').value, 
+                items: items, 
+                attachment_url: publicUrl, 
+                status: 'pending_head' 
+            };
             
             const { error } = await db.from('purchase_requests').insert([payload]);
             if (error) throw error;
 
+            // 4. ส่งเมลหาหัวหน้า
             btn.innerText = '⏳ ส่งอีเมล...';
             const adminLink = window.location.origin + '/admin.html';
             await emailjs.send(CONFIG.emailServiceId, CONFIG.emailTemplateId_Master, { 
@@ -196,23 +263,43 @@ if (prForm) {
             alert(`✅ ส่งเรื่องถึงหัวหน้าแผนก${dept} เรียบร้อยแล้ว!`); 
             window.location.reload();
 
-        } catch (err) { console.error(err); alert('Error: ' + err.message); } finally { btn.disabled = false; btn.innerText = originalText; }
+        } catch (err) { 
+            console.error(err); 
+            alert('Error: ' + err.message); 
+        } finally { 
+            btn.disabled = false; 
+            btn.innerText = originalText; 
+        }
     });
 }
 
-// ================= 5. ADMIN LOGIC =================
+// ================= 5. ADMIN LOGIC (ระบบอนุมัติ) =================
+
+// ตรวจสอบรหัสผ่าน
 window.checkAdminPassword = function() {
     const input = document.getElementById('adminPassInput').value;
     const matchedDept = CONFIG.passwords[input];
+    
     if (matchedDept) {
         sessionStorage.setItem('isAdmin', 'true');
-        if (matchedDept === 'MANAGER_ROLE') { currentUserRole = 'manager'; currentUserDept = 'ALL'; } 
-        else { currentUserRole = 'head'; currentUserDept = matchedDept; }
+        
+        if (matchedDept === 'MANAGER_ROLE') { 
+            currentUserRole = 'manager'; 
+            currentUserDept = 'ALL'; 
+        } else { 
+            currentUserRole = 'head'; 
+            currentUserDept = matchedDept; 
+        }
+        
         sessionStorage.setItem('userRole', currentUserRole);
         sessionStorage.setItem('userDept', currentUserDept);
+        
         document.getElementById('loginOverlay').style.display = 'none';
-        updateAdminUI(); loadData();
-    } else { alert("❌ รหัสผ่านไม่ถูกต้อง!"); }
+        updateAdminUI(); 
+        loadData();
+    } else { 
+        alert("❌ รหัสผ่านไม่ถูกต้อง!"); 
+    }
 }
 
 function updateAdminUI() {
@@ -223,10 +310,12 @@ function updateAdminUI() {
     }
 }
 
+// สลับประเภทเอกสาร (PR / Memo)
 window.switchDocType = function(type) {
     currentDocType = type;
     const btnPR = document.getElementById('btnTypePR');
     const btnMemo = document.getElementById('btnTypeMemo');
+    
     if (type === 'pr') { 
         btnPR.className = 'btn btn-primary position-relative'; 
         btnMemo.className = 'btn btn-outline-primary position-relative'; 
@@ -237,6 +326,7 @@ window.switchDocType = function(type) {
     loadData();
 }
 
+// สลับ Tab (รออนุมัติ / ประวัติ)
 window.switchTab = function(mode) {
     currentMode = mode;
     document.getElementById('btnPending').className = mode === 'pending' ? 'btn btn-warning active' : 'btn btn-outline-secondary';
@@ -244,11 +334,13 @@ window.switchTab = function(mode) {
     loadData();
 }
 
+// โหลดข้อมูลลงตาราง
 async function loadData() {
     const tableBody = document.getElementById('dataTableBody');
     if (!tableBody) return;
     tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-4">⏳ กำลังโหลด...</td></tr>';
     
+    // อัปเดตตัวเลขแจ้งเตือน
     updateBadges();
 
     try {
@@ -258,6 +350,7 @@ async function loadData() {
         if (currentMode === 'pending') {
             if (currentUserRole === 'head') {
                 query = query.eq('status', 'pending_head');
+                // แยกเงื่อนไข Department ตามตาราง
                 if(currentDocType === 'pr') query = query.eq('department', currentUserDept);
                 else query = query.eq('from_dept', currentUserDept);
             } else if (currentUserRole === 'manager') {
@@ -278,12 +371,16 @@ async function loadData() {
         allDocs = data;
         tableBody.innerHTML = '';
         
-        if (data.length === 0) { tableBody.innerHTML = `<tr><td colspan="5" class="text-center p-5 text-muted">ไม่พบรายการ (${currentDocType.toUpperCase()})</td></tr>`; return; }
+        if (data.length === 0) { 
+            tableBody.innerHTML = `<tr><td colspan="5" class="text-center p-5 text-muted">ไม่พบรายการ (${currentDocType.toUpperCase()})</td></tr>`; 
+            return; 
+        }
 
         data.forEach(doc => {
             const date = new Date(doc.created_at || doc.date).toLocaleDateString('th-TH');
             let docNo = currentDocType === 'pr' ? doc.pr_number : doc.memo_no;
             let from = currentDocType === 'pr' ? `${doc.requester} (${doc.department})` : `${doc.from_dept} : ${doc.subject}`;
+            
             let statusText = doc.status;
             if (doc.status === 'pending_head') statusText = 'รอหัวหน้าแผนก';
             else if (doc.status === 'pending_manager') statusText = 'รอผู้ช่วย กก.';
@@ -298,12 +395,18 @@ async function loadData() {
             </tr>`;
             tableBody.innerHTML += row;
         });
-    } catch (err) { console.error(err); tableBody.innerHTML = `<tr><td colspan="5" class="text-danger text-center">Error: ${err.message}</td></tr>`; }
+
+    } catch (err) { 
+        console.error(err); 
+        tableBody.innerHTML = `<tr><td colspan="5" class="text-danger text-center">Error: ${err.message}</td></tr>`; 
+    }
 }
 
+// อัปเดตตัวเลขแจ้งเตือน (Badge)
 async function updateBadges() {
     const badgePR = document.getElementById('badgePR');
     const badgeMemo = document.getElementById('badgeMemo');
+    
     const getCount = async (table) => {
         let q = db.from(table).select('id', { count: 'exact', head: true });
         if (currentUserRole === 'head') {
@@ -316,16 +419,20 @@ async function updateBadges() {
         const { count } = await q;
         return count || 0;
     };
+
     const countPR = await getCount('purchase_requests');
     const countMemo = await getCount('memos');
+
     if(countPR > 0) { badgePR.innerText = countPR; badgePR.style.display = 'inline-block'; } else { badgePR.style.display = 'none'; }
     if(countMemo > 0) { badgeMemo.innerText = countMemo; badgeMemo.style.display = 'inline-block'; } else { badgeMemo.style.display = 'none'; }
 }
 
+// เปิดหน้าต่างอนุมัติ
 window.openDetailModal = function(id) {
     currentDoc = allDocs.find(d => String(d.id) === String(id));
     if (!currentDoc) return;
 
+    // 1. กรณีเป็น PR
     if (currentDocType === 'pr') {
         document.getElementById('doc_type_title').innerText = "ใบขอซื้อ (Purchase Request)";
         document.getElementById('pr_form_layout').style.display = 'block';
@@ -338,6 +445,7 @@ window.openDetailModal = function(id) {
         document.getElementById('pr_remark').innerText = currentDoc.header_remark || '-';
         document.getElementById('sign_requester_name').innerText = currentDoc.requester;
 
+        // สร้างตารางรายการสินค้า
         const tbody = document.getElementById('pr_items_body');
         tbody.innerHTML = '';
         currentDoc.items.forEach((item, index) => {
@@ -349,6 +457,8 @@ window.openDetailModal = function(id) {
             }
             tbody.innerHTML += `<tr><td>${item.code||'-'}</td><td>${item.description}</td><td>${item.quantity}</td><td>${item.unit}</td><td class="text-center">${approvalHtml}</td></tr>`;
         });
+
+    // 2. กรณีเป็น Memo
     } else {
         document.getElementById('doc_type_title').innerText = "บันทึกข้อความ (Memo)";
         document.getElementById('pr_form_layout').style.display = 'none';
@@ -363,6 +473,7 @@ window.openDetailModal = function(id) {
         document.getElementById('sign_requester_name').innerText = "เจ้าหน้าที่แผนก" + currentDoc.from_dept;
     }
 
+    // แสดงไฟล์แนบ
     const attArea = document.getElementById('attachment_area');
     if (currentDoc.attachment_url) {
         attArea.style.display = 'block';
@@ -371,6 +482,7 @@ window.openDetailModal = function(id) {
         attArea.style.display = 'none';
     }
 
+    // ปุ่มอนุมัติ
     const saveBtn = document.querySelector('.modal-footer .btn-success');
     if (currentMode === 'history') {
         saveBtn.style.display = 'none';
@@ -381,6 +493,7 @@ window.openDetailModal = function(id) {
     new bootstrap.Modal(document.getElementById('detailModal')).show();
 }
 
+// กดปุ่มยืนยันผลการพิจารณา
 window.finalizeApproval = async function() {
     const btn = document.querySelector('.modal-footer .btn-success');
     btn.disabled = true; btn.innerText = '⏳ กำลังประมวลผล...';
@@ -389,6 +502,7 @@ window.finalizeApproval = async function() {
         let nextStatus = (currentUserRole === 'head') ? 'pending_manager' : 'processed';
         const tableName = currentDocType === 'pr' ? 'purchase_requests' : 'memos';
         
+        // อัปเดตฐานข้อมูล
         if (currentDocType === 'pr') {
             document.querySelectorAll('.item-checkbox').forEach(cb => {
                 const idx = cb.dataset.index;
@@ -399,24 +513,29 @@ window.finalizeApproval = async function() {
             await db.from(tableName).update({ status: nextStatus }).eq('id', currentDoc.id);
         }
 
+        // ส่งอีเมลแจ้งเตือน
         const adminLink = window.location.origin + '/admin.html';
         const docNo = currentDocType === 'pr' ? currentDoc.pr_number : currentDoc.memo_no;
 
+        // 1. หัวหน้าแผนกอนุมัติ -> ส่งต่อ ผู้ช่วย กก.
         if (currentUserRole === 'head') {
             await emailjs.send(CONFIG.emailServiceId, CONFIG.emailTemplateId_Master, { 
                 to_email: CONFIG.managerEmail, 
                 subject: `[Step 2] รออนุมัติ: ${currentDocType.toUpperCase()} ${docNo}`, 
                 html_content: `<h3>เรียน ผู้ช่วยกรรมการ</h3><p>รายการ ${docNo} ผ่านการตรวจสอบจากหัวหน้าแผนกแล้ว</p><a href="${adminLink}">เข้าสู่ระบบเพื่ออนุมัติ</a>` 
             });
-        } else {
+        } 
+        // 2. ผู้ช่วย กก. อนุมัติ (จบงาน)
+        else {
             if (currentDocType === 'pr' && CONFIG.purchasingEmail) {
+                // ถ้าเป็น PR -> ส่งฝ่ายจัดซื้อ
                 await emailjs.send(CONFIG.emailServiceId, CONFIG.emailTemplateId_Master, { 
                     to_email: CONFIG.purchasingEmail, 
                     subject: `[Approved] สั่งซื้อสินค้า PR ${docNo}`, 
                     html_content: `<h3>เรียน ฝ่ายจัดซื้อ</h3><p>PR ${docNo} อนุมัติแล้ว ดำเนินการสั่งซื้อได้เลย</p>` 
                 });
             } else if (currentDocType === 'memo') {
-                // [จุดแก้ไข] ส่งลิงก์กลับหาหัวหน้าเพื่อกดบันทึก PDF
+                // ถ้าเป็น Memo -> ส่งกลับหัวหน้าแผนก (เจ้าของเรื่อง)
                 const headEmail = CONFIG.departmentHeads[currentDoc.from_dept];
                 const viewLink = window.location.origin + `/view_memo.html?id=${currentDoc.id}`;
 
@@ -441,10 +560,16 @@ window.finalizeApproval = async function() {
         alert('✅ ดำเนินการเรียบร้อย!');
         bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide();
         loadData();
-    } catch (err) { console.error(err); alert('Error: ' + err.message); } finally { if(btn) btn.disabled = false; }
+    } catch (err) { 
+        console.error(err); 
+        alert('Error: ' + err.message); 
+    } finally { 
+        if(btn) btn.disabled = false; 
+    }
 }
 
-// Print Loaders
+// ================= 6. PRINT VIEW LOGIC (สำหรับหน้าพิมพ์) =================
+
 async function loadPRForPrint() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
@@ -490,10 +615,22 @@ async function loadMemoForPrint() {
         document.getElementById('v_to').innerText = m.to_dept;
         document.getElementById('v_subject').innerText = m.subject;
         document.getElementById('v_content').innerText = m.content;
+        
         if (m.attachment_url) {
             document.getElementById('v_attachment_area').style.display = 'block';
             document.getElementById('v_attachment_link').href = m.attachment_url;
         }
+
+        // แสดงลายเซ็น (3 ช่อง)
+        document.getElementById('v_sign_requester').innerText = "เจ้าหน้าที่แผนก" + m.from_dept;
+        
+        if (m.status === 'pending_manager' || m.status === 'processed') { 
+            document.getElementById('v_sign_head').innerHTML = `( หัวหน้าแผนก${m.from_dept} )<br><span class="text-success small" style="font-size:10px;">อนุมัติออนไลน์</span>`; 
+        }
+        if (m.status === 'processed') { 
+            document.getElementById('v_sign_manager').innerHTML = '( เบญจมาศ ถิ่นจันทร์ )<br><span class="text-success small" style="font-size:10px;">อนุมัติออนไลน์</span>'; 
+        }
+
     } catch (err) { alert('Error: ' + err.message); }
 }
 
