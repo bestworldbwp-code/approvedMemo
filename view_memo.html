@@ -12,60 +12,26 @@
     
     <style>
         body { background: #525659; font-family: 'Sarabun', sans-serif; color: #000 !important; }
-        
-        .page { 
-            background: white; 
-            width: 210mm; 
-            min-height: 297mm; 
-            padding: 20mm 25mm; 
-            margin: 10mm auto; 
-            position: relative; 
-            display: flex; 
-            flex-direction: column; 
-            box-shadow: 0 0 20px rgba(0,0,0,0.3); 
-            box-sizing: border-box; 
-        }
-        
+        .page { background: white; width: 210mm; min-height: 297mm; padding: 20mm 25mm; margin: 10mm auto; position: relative; display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.3); box-sizing: border-box; }
         .memo-header { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
         .memo-title { font-size: 24px; font-weight: bold; text-align: center; margin-top: 10px; }
-        
-        /* Table Layout for Header */
         .header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         .header-table td { padding: 5px 0; vertical-align: bottom; }
         .label-cell { font-weight: bold; white-space: nowrap; width: 1%; padding-right: 10px !important; }
         .value-cell { border-bottom: 1px dotted #000; width: 100%; padding-left: 5px; color: #000; }
         .value-text { font-weight: normal; margin-left: 5px; }
-
-        .memo-content { 
-            min-height: 300px; 
-            margin-top: 20px; 
-            font-size: 16px;
-            line-height: 1.6;
-            white-space: pre-wrap;       
-            word-wrap: break-word;       
-            overflow-wrap: break-word;   
-        }
-
+        .memo-content { min-height: 300px; margin-top: 20px; font-size: 16px; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; }
         .signature-section { margin-top: auto; padding-top: 50px; }
         .sign-line { border-bottom: 1px dotted #000; width: 90%; margin: 30px auto 5px auto; height: 5px; }
-        
         @page { size: A4; margin: 0; }
-        @media print { 
-            body, html { background: white; margin: 0; padding: 0; width: 100%; height: 100%; }
-            .page { width: 100%; height: auto; margin: 0; padding: 20mm 25mm; box-shadow: none; border: none; }
-            .no-print { display: none !important; } 
-        }
+        @media print { body, html { background: white; margin: 0; padding: 0; width: 100%; height: 100%; } .page { width: 100%; height: auto; margin: 0; padding: 20mm 25mm; box-shadow: none; border: none; } .no-print { display: none !important; } }
     </style>
 </head>
 <body>
 
 <div class="text-center mt-3 mb-3 no-print">
-    <button onclick="downloadPDF()" class="btn btn-success btn-lg shadow">
-        <i class="bi bi-file-earmark-pdf-fill"></i> บันทึกเป็น PDF
-    </button>
-    <button onclick="window.print()" class="btn btn-primary btn-lg shadow ms-2">
-        <i class="bi bi-printer"></i> สั่งพิมพ์
-    </button>
+    <button onclick="downloadPDF()" class="btn btn-success btn-lg shadow"><i class="bi bi-file-earmark-pdf-fill"></i> บันทึกเป็น PDF</button>
+    <button onclick="window.print()" class="btn btn-primary btn-lg shadow ms-2"><i class="bi bi-printer"></i> สั่งพิมพ์</button>
     <button onclick="window.close()" class="btn btn-secondary ms-2">ปิดหน้าต่าง</button>
 </div>
 
@@ -77,91 +43,31 @@
             <div class="memo-title">บันทึกข้อความ (MEMORANDUM)</div>
         </div>
     </div>
-
     <table class="header-table">
-        <tr>
-            <td class="label-cell">หน่วยงาน</td>
-            <td class="value-cell" colspan="3"><span id="v_from" class="value-text">-</span></td>
-        </tr>
-        <tr>
-            <td class="label-cell">ที่</td>
-            <td class="value-cell"><span id="v_memo_no" class="value-text">-</span></td>
-            <td class="label-cell" style="padding-left: 20px !important;">วันที่</td>
-            <td class="value-cell" style="width: 150px;"><span id="v_date" class="value-text">-</span></td>
-        </tr>
-        <tr>
-            <td class="label-cell">เรื่อง</td>
-            <td class="value-cell" colspan="3"><span id="v_subject" class="value-text fw-bold">-</span></td>
-        </tr>
-        <tr>
-            <td class="label-cell">เรียน</td>
-            <td colspan="3" style="padding-top: 10px;"><span id="v_to" class="fw-bold ms-2">-</span></td>
-        </tr>
+        <tr><td class="label-cell">หน่วยงาน</td><td class="value-cell" colspan="3"><span id="v_from" class="value-text">-</span></td></tr>
+        <tr><td class="label-cell">ที่</td><td class="value-cell"><span id="v_memo_no" class="value-text">-</span></td><td class="label-cell" style="padding-left: 20px !important;">วันที่</td><td class="value-cell" style="width: 150px;"><span id="v_date" class="value-text">-</span></td></tr>
+        <tr><td class="label-cell">เรื่อง</td><td class="value-cell" colspan="3"><span id="v_subject" class="value-text fw-bold">-</span></td></tr>
+        <tr><td class="label-cell">เรียน</td><td colspan="3" style="padding-top: 10px;"><span id="v_to" class="fw-bold ms-2">-</span></td></tr>
     </table>
-
     <hr style="border-top: 2px solid #000; opacity: 1; margin-top: 0;">
-
     <div class="memo-content" id="v_content"></div>
-
-    <div class="mt-3 no-print" id="v_attachment_area" style="display:none;">
-        <div class="alert alert-warning py-2">
-            <strong>📎 สิ่งที่ส่งมาด้วย:</strong> <a href="#" id="v_attachment_link" target="_blank">คลิกเพื่อดูไฟล์แนบ</a>
-            <br><small class="text-muted">(ไฟล์แนบจะไม่แสดงใน PDF กรุณาบันทึกแยก)</small>
-        </div>
-    </div>
-
+    <div class="mt-3 no-print" id="v_attachment_area" style="display:none;"><div class="alert alert-warning py-2"><strong>📎 สิ่งที่ส่งมาด้วย:</strong> <a href="#" id="v_attachment_link" target="_blank">คลิกเพื่อดูไฟล์แนบ</a><br><small class="text-muted">(ไฟล์แนบจะไม่แสดงใน PDF กรุณาบันทึกแยก)</small></div></div>
     <div class="signature-section">
         <div class="row text-center">
-            <div class="col-4">
-                <div class="fw-bold mb-2">ผู้จัดทำ</div>
-                <div class="mb-1 fw-bold" style="color: #000; height: 40px; display: flex; align-items: end; justify-content: center;">
-                    <span id="v_sign_requester"></span>
-                </div>
-                <div class="sign-line"></div>
-                <div class="small mt-1" style="color: #000;">วันที่ ....../....../......</div>
-            </div>
-
-            <div class="col-4">
-                <div class="fw-bold mb-2">ผู้ตรวจสอบ</div>
-                <div class="mb-1 fw-bold" style="color: #000; height: 40px; display: flex; align-items: end; justify-content: center;">
-                    <span id="v_sign_head"></span>
-                </div>
-                <div class="sign-line"></div>
-                <div class="small mt-1" style="color: #000;">หัวหน้าแผนก</div>
-            </div>
-
-            <div class="col-4">
-                <div class="fw-bold mb-2">ผู้อนุมัติ</div>
-                <div class="mb-1 fw-bold" style="color: #000; height: 40px; display: flex; align-items: end; justify-content: center;">
-                    <span id="v_sign_manager"></span>
-                </div>
-                <div class="sign-line"></div>
-                <div class="small mt-1" style="color: #000;">ผู้ช่วยกรรมการผู้จัดการ</div>
-            </div>
+            <div class="col-4"><div class="fw-bold mb-2">ผู้จัดทำ</div><div class="mb-1 fw-bold" style="color: #000; height: 40px; display: flex; align-items: end; justify-content: center;"><span id="v_sign_requester"></span></div><div class="sign-line"></div><div class="small mt-1" style="color: #000;">วันที่ ....../....../......</div></div>
+            <div class="col-4"><div class="fw-bold mb-2">ผู้ตรวจสอบ</div><div class="mb-1 fw-bold" style="color: #000; height: 40px; display: flex; align-items: end; justify-content: center;"><span id="v_sign_head"></span></div><div class="sign-line"></div><div class="small mt-1" style="color: #000;">หัวหน้าแผนก</div></div>
+            <div class="col-4"><div class="fw-bold mb-2">ผู้อนุมัติ</div><div class="mb-1 fw-bold" style="color: #000; height: 40px; display: flex; align-items: end; justify-content: center;"><span id="v_sign_manager"></span></div><div class="sign-line"></div><div class="small mt-1" style="color: #000;">ผู้ช่วยกรรมการผู้จัดการ</div></div>
         </div>
     </div>
 </div>
 
 <script src="logo.js"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        if (typeof LOGO_BASE64 !== 'undefined') {
-            document.querySelectorAll('.app-logo').forEach(img => img.src = LOGO_BASE64);
-        }
-    });
-
+    document.addEventListener("DOMContentLoaded", function() { if (typeof LOGO_BASE64 !== 'undefined') { document.querySelectorAll('.app-logo').forEach(img => img.src = LOGO_BASE64); } });
     function downloadPDF() {
         const element = document.getElementById('content-to-pdf');
         const docNo = document.getElementById('v_memo_no').innerText || 'memo';
-        
-        const opt = {
-            margin:       0,
-            filename:     `${docNo}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
+        const opt = { margin: 0, filename: `${docNo}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
         html2pdf().set(opt).from(element).save();
     }
 </script>
