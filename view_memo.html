@@ -28,8 +28,14 @@
         
         .memo-header { border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
         .memo-title { font-size: 24px; font-weight: bold; text-align: center; margin-top: 10px; }
-        .field-label { font-weight: bold; width: 100px; display: inline-block; vertical-align: top; }
         
+        /* [แก้ไขใหม่] ใช้ตารางจัด Layout ส่วนหัว เพื่อให้เส้นบรรทัดตรงเป๊ะใน PDF */
+        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .header-table td { padding: 5px 0; vertical-align: bottom; }
+        .label-cell { font-weight: bold; white-space: nowrap; width: 1%; padding-right: 10px !important; }
+        .value-cell { border-bottom: 1px dotted #000; width: 100%; padding-left: 5px; color: #000; }
+        .value-text { font-weight: normal; margin-left: 5px; }
+
         .memo-content { 
             min-height: 300px; 
             margin-top: 20px; 
@@ -38,8 +44,6 @@
             white-space: pre-wrap;       
             word-wrap: break-word;       
             overflow-wrap: break-word;   
-            word-break: break-word;      
-            width: 100%;                 
         }
 
         .signature-section { margin-top: auto; padding-top: 50px; }
@@ -59,7 +63,6 @@
     <button onclick="downloadPDF()" class="btn btn-success btn-lg shadow">
         <i class="bi bi-file-earmark-pdf-fill"></i> บันทึกเป็น PDF
     </button>
-    
     <button onclick="window.print()" class="btn btn-primary btn-lg shadow ms-2">
         <i class="bi bi-printer"></i> สั่งพิมพ์
     </button>
@@ -75,18 +78,28 @@
         </div>
     </div>
 
-    <div class="mb-4">
-        <div><span class="field-label">หน่วยงาน:</span> <span id="v_from">-</span></div>
-        
-        <div class="mt-2">
-            <span class="field-label">ที่:</span> <span id="v_memo_no" style="display:inline-block; width:200px;">-</span>
-            <span class="field-label text-end" style="width:50px;">วันที่:</span> <span id="v_date">-</span>
-        </div>
-        <div class="mt-2"><span class="field-label">เรื่อง:</span> <span id="v_subject" class="fw-bold">-</span></div>
-        <div class="mt-3"><span class="field-label">เรียน:</span> <span id="v_to" class="fw-bold">-</span></div>
-    </div>
+    <table class="header-table">
+        <tr>
+            <td class="label-cell">ส่วนราชการ</td>
+            <td class="value-cell" colspan="3"><span id="v_from" class="value-text">-</span></td>
+        </tr>
+        <tr>
+            <td class="label-cell">ที่</td>
+            <td class="value-cell"><span id="v_memo_no" class="value-text">-</span></td>
+            <td class="label-cell" style="padding-left: 20px !important;">วันที่</td>
+            <td class="value-cell" style="width: 150px;"><span id="v_date" class="value-text">-</span></td>
+        </tr>
+        <tr>
+            <td class="label-cell">เรื่อง</td>
+            <td class="value-cell" colspan="3"><span id="v_subject" class="value-text fw-bold">-</span></td>
+        </tr>
+        <tr>
+            <td class="label-cell">เรียน</td>
+            <td colspan="3" style="padding-top: 10px;"><span id="v_to" class="fw-bold ms-2">-</span></td>
+        </tr>
+    </table>
 
-    <hr style="border-top: 2px solid #000; opacity: 1;">
+    <hr style="border-top: 2px solid #000; opacity: 1; margin-top: 0;">
 
     <div class="memo-content" id="v_content"></div>
 
@@ -123,16 +136,15 @@
         }
     });
 
-    // [3] ฟังก์ชันสำหรับบันทึกเป็น PDF
     function downloadPDF() {
         const element = document.getElementById('content-to-pdf');
         const docNo = document.getElementById('v_memo_no').innerText || 'memo';
         
         const opt = {
             margin:       0,
-            filename:     `${docNo}.pdf`, // ตั้งชื่อไฟล์ตามเลขที่ Memo
+            filename:     `${docNo}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2 },
+            html2canvas:  { scale: 2, useCORS: true }, // เพิ่ม useCORS เพื่อให้โหลดรูป Logo ได้ชัวร์ขึ้น
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
