@@ -14,7 +14,7 @@ const CONFIG = {
     departmentHeads: {
         'จัดซื้อ': 'asst.purbwp@gmail.com',
         'QC': 'qs.bestworld@gmail.com',
-        'ซ่อมบำรุง': 'nmt.bwp328@gmail.com',
+        'ซ่อมบำรุง': 'mtn.bwp328@gmail.com',
         'ฝ่ายผลิต': 'production.bwp328@gmail.com',
         'HR': 'mgr.hrbwp@gmail.com'
     },
@@ -364,3 +364,4 @@ if(document.getElementById('v_tableBody')) window.onload = loadPRForPrint;
 if(document.getElementById('v_content')) window.onload = loadMemoForPrint;
 
 document.addEventListener('keydown', function(event) { if (event.key === 'Enter' && event.target.tagName === 'INPUT') { event.preventDefault(); return false; } });
+
