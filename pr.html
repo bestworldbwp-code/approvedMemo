@@ -2,47 +2,211 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ใบขอซื้อ (PR)</title>
+    <title>รายละเอียดใบขอซื้อ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <style>body { background-color: #f8f9fa; font-family: 'Sarabun', sans-serif; } .main-container { max-width: 900px; background: white; padding: 40px; margin: 30px auto; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }</style>
+    <style>
+        body { background: #525659; font-family: 'Sarabun', sans-serif; color: #000 !important; } 
+        .border, .table-bordered, .table-bordered th, .table-bordered td, .border-bottom, .border-dark { border-color: #000000 !important; border-width: 1px !important; } 
+        .sign-line { border-bottom: 1px dotted #000000 !important; width: 140px; margin: 5px auto; height: 5px; } 
+        .page { background: white; width: 210mm; min-height: 297mm; padding: 15mm 20mm; margin: 10mm auto; position: relative; display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.3); } 
+        .doc-footer { position: absolute; bottom: 10mm; right: 20mm; font-size: 12px; text-align: right; color: #000; } 
+        
+        /* ปุ่มเลือกโหมด */
+        .btn-mode { border: 2px solid white; min-width: 150px; }
+        .btn-mode.active { border: 2px solid #0d6efd; background-color: #e9ecef; color: #0d6efd; font-weight: bold; }
+
+        @page { size: A4; margin: 0; } 
+        @media print { 
+            body, html { background: white !important; margin: 0 !important; padding: 0 !important; width: 100%; height: 100%; } 
+            .page { width: 100%; height: auto; margin: 0 !important; padding: 15mm 10mm !important; box-shadow: none !important; border: none !important; page-break-after: avoid; } 
+            .no-print { display: none !important; } 
+            .doc-footer { bottom: 10mm; right: 10mm; } 
+            .mb-4 { margin-bottom: 1rem !important; } .p-3 { padding: 0.8rem !important; } 
+        } 
+        .signature-section { margin-top: auto; padding-top: 20px; padding-bottom: 30px; } 
+    </style>
 </head>
 <body>
-<div class="main-container">
-    <a href="index.html" class="btn btn-outline-secondary btn-sm mb-3">⬅️ กลับหน้าเมนูหลัก</a>
-    <div class="text-center mb-5">
-        <img src="" class="app-logo mb-2" alt="Logo" style="height: 80px;">
-        <h4 class="fw-bold m-0 text-dark">บริษัท เบสท์เวิลด์ อินเตอร์พลาส จำกัด</h4>
-        <h5 class="text-primary mt-2">ใบขอซื้อ (Purchase Request)</h5>
+
+<div class="no-print text-center mt-3 mb-2">
+    <div class="bg-dark p-3 d-inline-block rounded shadow-sm">
+        <span class="text-white me-2">เลือกรูปแบบเอกสาร:</span>
+        <button onclick="switchMode('all')" id="btnAll" class="btn btn-light btn-sm btn-mode active">📄 ฉบับเต็ม (มีประวัติแก้ไข)</button>
+        <button onclick="switchMode('approved')" id="btnApp" class="btn btn-light btn-sm btn-mode ms-2">✅ ฉบับสั่งซื้อ (เฉพาะอนุมัติ)</button>
     </div>
-    <form id="prForm">
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label fw-bold">หน่วยงาน</label>
-                <select id="department" class="form-select" required>
-                    <option value="" selected disabled>-- กรุณาเลือก --</option>
-                    <option value="จัดซื้อ">จัดซื้อ</option>
-                    <option value="QC">QC</option>
-                    <option value="ซ่อมบำรุง">ซ่อมบำรุง</option>
-                    <option value="ฝ่ายผลิต">ฝ่ายผลิต</option>
-                    <option value="HR">HR</option>
-                </select>
-            </div>
-            <div class="col-md-6"><label class="form-label fw-bold">เลขที่ PR</label><input type="text" id="pr_number" class="form-control" required></div>
-            <div class="col-md-6"><label class="form-label fw-bold">ผู้ขอซื้อ</label><input type="text" id="requester" class="form-control" required></div>
-            <div class="col-md-6"><label class="form-label fw-bold">อีเมล</label><input type="email" id="email" class="form-control" required></div>
-            <div class="col-md-6"><label class="form-label fw-bold">วันที่ต้องการของ</label><input type="date" id="required_date" class="form-control" required></div>
-        </div>
-        <hr class="my-4">
-        <div class="d-flex justify-content-between align-items-center mb-3"><h5 class="fw-bold m-0">📦 รายการสินค้า</h5><button type="button" class="btn btn-success btn-sm" onclick="addItemRow()">+ เพิ่มรายการ</button></div>
-        <div id="itemsContainer"></div>
-        <div class="mb-3 mt-4"><label class="form-label fw-bold">หมายเหตุ</label><textarea id="header_remark" class="form-control" rows="2"></textarea></div>
-        <div class="mb-4"><label class="form-label fw-bold">แนบไฟล์</label><input type="file" id="attachment" class="form-control" accept=".pdf, .jpg, .jpeg, .png"></div>
-        <button type="submit" class="btn btn-primary w-100 py-2 fs-5 shadow-sm" id="btnSubmit">🚀 ส่งคำขออนุมัติ</button>
-    </form>
 </div>
-<script src="logo.js"></script><script src="script.js"></script>
+
+<div class="text-center mb-3 no-print">
+    <button onclick="window.print()" class="btn btn-primary btn-lg shadow">🖨️ สั่งพิมพ์</button>
+    <button onclick="window.close()" class="btn btn-secondary ms-2">ปิดหน้าต่าง</button>
+</div>
+
+<div class="page">
+    <div class="text-center mb-4 border-bottom pb-3">
+        <div class="d-flex align-items-center justify-content-center">
+            <img src="" class="app-logo me-3" alt="Logo" style="height: 70px;">
+            <div class="text-start">
+                <h4 class="fw-bold m-0 text-dark" style="color: #000 !important;">บริษัท เบสท์เวิลด์ อินเตอร์พลาส จำกัด</h4>
+                <small class="text-muted d-block" style="color: #333 !important;">328 ม.6 ต.คลองนิยมยาตรา อ.บางบ่อ จ.สมุทรปราการ 10560</small>
+            </div>
+        </div>
+        <h5 class="mt-3 fw-bold" id="doc_title" style="color: #000 !important;">ใบขอซื้อ (Purchase Request)</h5>
+        <div id="sub_title" class="small text-muted fst-italic" style="display:none;">(แสดงเฉพาะรายการที่ได้รับอนุมัติ)</div>
+    </div>
+
+    <div class="row border p-3 mb-3 rounded mx-0 fw-bold" style="color: #000;">
+        <div class="col-6 mb-2">เลขที่เอกสาร: <span id="v_pr_number" class="fw-normal">-</span></div>
+        <div class="col-6 mb-2">วันที่ขอ: <span id="v_created_at" class="fw-normal">-</span></div>
+        <div class="col-6 mb-2">ผู้ขอซื้อ: <span id="v_requester" class="fw-normal">-</span></div>
+        <div class="col-6 mb-2">วันที่ต้องการของ: <span id="v_required_date" class="fw-normal text-danger">-</span></div>
+        <div class="col-6 mb-2">แผนก: <span id="v_department" class="fw-normal">-</span></div>
+        <div class="col-6">สถานะเอกสาร: <span id="v_doc_status" class="fw-normal">-</span></div>
+    </div>
+
+    <table class="table table-bordered mb-2 table-sm">
+        <thead class="table-light" style="border-color: #000 !important;">
+            <tr class="align-middle fw-bold">
+                <th class="text-center" width="5%">#</th>
+                <th width="10%">รหัส</th>
+                <th>รายการสินค้า</th>
+                <th width="10%" class="text-center">จำนวน</th>
+                <th width="10%" class="text-center">หน่วย</th>
+                <th width="25%" class="text-center">ผลการพิจารณา / หมายเหตุ</th>
+            </tr>
+        </thead>
+        <tbody id="v_tableBody" style="border-color: #000 !important;"></tbody>
+    </table>
+
+    <div class="mt-2 px-1 fw-bold">หมายเหตุ: <span id="v_remark" class="fw-normal">-</span></div>
+
+    <div class="signature-section">
+        <div class="row text-center">
+            <div class="col-4">
+                <div class="fw-bold mb-2">ผู้ขอซื้อ</div>
+                <div class="mb-1 fw-bold" style="color: #000;"><span id="v_sign_requester"></span></div>
+                <div class="sign-line"></div>
+                <div class="small mt-1" style="color: #000;">วันที่ ............/............/............</div>
+            </div>
+            <div class="col-4">
+                <div class="fw-bold mb-2">ผู้อนุมัติเบื้องต้น</div>
+                <div class="mb-1 fw-bold" style="color: #000;" id="v_sign_head">( ........................................... )</div>
+                <div class="sign-line"></div>
+                <div class="small mt-1" style="color: #000;">วันที่ ............/............/............</div>
+            </div>
+            <div class="col-4">
+                <div class="fw-bold mb-2">ผู้อนุมัติ</div>
+                <div class="mb-1 fw-bold" style="color: #000;" id="v_sign_manager">( ........................................... )</div>
+                <div class="sign-line"></div>
+                <div class="small mt-1" style="color: #000;">วันที่ ............/............/............</div>
+            </div>
+        </div>
+    </div>
+    <div class="doc-footer">FQP-PUR-01:04 Rev.02</div>
+</div>
+
+<script src="logo.js"></script>
+<script src="script.js"></script>
+<script>
+    let currentPRData = null;
+
+    // โหลดข้อมูลแล้วเก็บไว้ในตัวแปร
+    async function initPage() {
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get('id');
+        if (!id) return;
+
+        // เรียกฟังก์ชันโหลดจาก script.js แต่เราจะ Override logic แสดงผลเอง
+        // เพื่อรองรับการสลับโหมด
+        if(typeof db !== 'undefined') {
+            try {
+                const { data: pr, error } = await db.from('purchase_requests').select('*').eq('id', id).single();
+                if (error) throw error;
+                currentPRData = pr;
+                renderHeader(pr);
+                renderTable('all'); // เริ่มต้นแสดงทั้งหมด (ฉบับเต็ม)
+            } catch (err) { alert('Error: ' + err.message); }
+        }
+    }
+
+    function renderHeader(pr) {
+        document.getElementById('v_pr_number').innerText = pr.pr_number;
+        document.getElementById('v_created_at').innerText = new Date(pr.created_at).toLocaleDateString('th-TH');
+        document.getElementById('v_requester').innerText = pr.requester;
+        document.getElementById('v_department').innerText = pr.department;
+        document.getElementById('v_doc_status').innerText = pr.status === 'processed' ? 'อนุมัติเรียบร้อย' : 'รออนุมัติ';
+        document.getElementById('v_remark').innerText = pr.header_remark || '-';
+        document.getElementById('v_sign_requester').innerText = `${pr.requester}`;
+        document.getElementById('v_required_date').innerText = new Date(pr.required_date).toLocaleDateString('th-TH');
+        
+        if (pr.status === 'pending_manager' || pr.status === 'processed') { 
+            document.getElementById('v_sign_head').innerHTML = `( ผู้อนุมัติเบื้องต้น ${pr.department} )<br><span class="text-success small" style="font-size:10px;">อนุมัติออนไลน์</span>`; 
+        }
+        if (pr.status === 'processed') { 
+            document.getElementById('v_sign_manager').innerHTML = '( เบญจมาศ ถิ่นจันทร์ )<br><span class="text-success small" style="font-size:10px;">อนุมัติออนไลน์</span>'; 
+        }
+    }
+
+    // ฟังก์ชันสลับโหมดการแสดงผล
+    window.switchMode = function(mode) {
+        // จัดการปุ่ม Active
+        document.getElementById('btnAll').classList.remove('active');
+        document.getElementById('btnApp').classList.remove('active');
+        if(mode === 'all') document.getElementById('btnAll').classList.add('active');
+        else document.getElementById('btnApp').classList.add('active');
+
+        // แสดง/ซ่อน Subtitle
+        document.getElementById('sub_title').style.display = (mode === 'approved') ? 'block' : 'none';
+
+        renderTable(mode);
+    }
+
+    function renderTable(mode) {
+        if(!currentPRData) return;
+        const tbody = document.getElementById('v_tableBody'); 
+        tbody.innerHTML = '';
+        
+        let itemsToShow = currentPRData.items;
+        
+        // ถ้าเลือกโหมด "สั่งซื้อ" ให้กรองเอาเฉพาะ Approved
+        if(mode === 'approved') {
+            itemsToShow = itemsToShow.filter(item => item.status === 'approved');
+        }
+
+        if(itemsToShow.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center p-3">ไม่มีรายการสินค้าในหมวดหมู่นี้</td></tr>`;
+            return;
+        }
+
+        itemsToShow.forEach((item, index) => {
+            let statusText = '';
+            // ถ้าโหมด "All" ให้โชว์สถานะและเหตุผล
+            // ถ้าโหมด "Approved" ไม่ต้องโชว์คำว่าอนุมัติก็ได้ เพราะมันผ่านหมดแล้ว หรือโชว์เพื่อให้ชัดเจน
+            if (item.status === 'approved') {
+                statusText = '<span class="fw-bold text-success">✅ อนุมัติ</span>';
+            } else if (item.status === 'rejected') {
+                statusText = `<span class="text-decoration-line-through text-danger">❌ ${item.remark || 'ไม่อนุมัติ'}</span>`;
+            } else {
+                statusText = '⏳ รอ';
+            }
+
+            // ถ้าโหมด Approved ให้ล้างช่องเหตุผลให้สะอาดตา
+            if(mode === 'approved') statusText = '-';
+
+            tbody.innerHTML += `
+                <tr>
+                    <td class="text-center">${index + 1}</td>
+                    <td>${item.code || '-'}</td>
+                    <td>${item.description}</td>
+                    <td class="text-center">${item.quantity}</td>
+                    <td class="text-center">${item.unit}</td>
+                    <td class="text-center">${statusText}</td>
+                </tr>`;
+        });
+    }
+
+    window.onload = initPage;
+</script>
 </body>
 </html>
