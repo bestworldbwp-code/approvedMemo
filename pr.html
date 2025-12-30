@@ -17,37 +17,32 @@
         <h4 class="fw-bold m-0 text-dark">บริษัท เบสท์เวิลด์ อินเตอร์พลาส จำกัด</h4>
         <h5 class="text-primary mt-2">ใบขอซื้อ (Purchase Request)</h5>
     </div>
-
     <form id="prForm">
         <div class="row g-3">
             <div class="col-md-6">
                 <label class="form-label fw-bold">หน่วยงาน</label>
                 <select id="department" class="form-select" required>
                     <option value="" selected disabled>-- กรุณาเลือก --</option>
+                    <option value="จัดซื้อ">จัดซื้อ</option>
                     <option value="QC">QC</option>
                     <option value="ซ่อมบำรุง">ซ่อมบำรุง</option>
                     <option value="ฝ่ายผลิต">ฝ่ายผลิต</option>
-                    <option value="จัดซื้อ">จัดซื้อ</option>
                     <option value="HR">HR</option>
                 </select>
             </div>
-            
             <div class="col-md-6"><label class="form-label fw-bold">เลขที่ PR</label><input type="text" id="pr_number" class="form-control" required></div>
             <div class="col-md-6"><label class="form-label fw-bold">ผู้ขอซื้อ</label><input type="text" id="requester" class="form-control" required></div>
             <div class="col-md-6"><label class="form-label fw-bold">อีเมล</label><input type="email" id="email" class="form-control" required></div>
             <div class="col-md-6"><label class="form-label fw-bold">วันที่ต้องการของ</label><input type="date" id="required_date" class="form-control" required></div>
         </div>
-
         <hr class="my-4">
         <div class="d-flex justify-content-between align-items-center mb-3"><h5 class="fw-bold m-0">📦 รายการสินค้า</h5><button type="button" class="btn btn-success btn-sm" onclick="addItemRow()">+ เพิ่มรายการ</button></div>
         <div id="itemsContainer"></div>
-
         <div class="mb-3 mt-4"><label class="form-label fw-bold">หมายเหตุ</label><textarea id="header_remark" class="form-control" rows="2"></textarea></div>
         <div class="mb-4"><label class="form-label fw-bold">แนบไฟล์</label><input type="file" id="attachment" class="form-control" accept=".pdf, .jpg, .jpeg, .png"></div>
         <button type="submit" class="btn btn-primary w-100 py-2 fs-5 shadow-sm" id="btnSubmit">🚀 ส่งคำขออนุมัติ</button>
     </form>
 </div>
-
 <script src="logo.js"></script><script src="script.js"></script>
 </body>
 </html>
