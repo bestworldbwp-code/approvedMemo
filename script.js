@@ -278,7 +278,6 @@ window.openDetailModal = function(id) {
     new bootstrap.Modal(document.getElementById('detailModal')).show();
 }
 
-// [ส่วนที่เคยหายไป] ฟังก์ชันไม่อนุมัติ
 window.rejectDocument = async function() {
     const comment = document.getElementById('approval_comment').value.trim();
     if (!comment) { alert("⚠️ กรุณาระบุเหตุผลที่ไม่อนุมัติ ในช่องว่างด้วยครับ"); return; }
@@ -288,7 +287,18 @@ window.rejectDocument = async function() {
 
     try {
         const tableName = currentDocType === 'pr' ? 'purchase_requests' : 'memos';
-        await db.from(tableName).update({ status: 'rejected' }).eq('id', currentDoc.id);
+        let updatePayload = { status: 'rejected' };
+
+        // [แก้ Logic] ถ้าเป็น PR ให้แก้ Item ข้างในเป็น rejected ทั้งหมดด้วย
+        if (currentDocType === 'pr' && currentDoc.items) {
+            const updatedItems = currentDoc.items.map(item => ({
+                ...item,
+                status: 'rejected'
+            }));
+            updatePayload.items = updatedItems;
+        }
+
+        await db.from(tableName).update(updatePayload).eq('id', currentDoc.id);
         
         const headEmail = CONFIG.departmentHeads[currentDoc.from_dept || currentDoc.department];
         const docNo = currentDocType === 'pr' ? currentDoc.pr_number : currentDoc.memo_no;
