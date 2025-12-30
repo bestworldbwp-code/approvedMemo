@@ -1,25 +1,42 @@
 const CONFIG = {
+    // Supabase Config
     supaUrl: 'https://pufddwdcpugilwlavban.supabase.co', 
     supaKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1ZmRkd2RjcHVnaWx3bGF2YmFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzODY1MDUsImV4cCI6MjA3NDk2MjUwNX0.6dyYteDu6QSkTL9hIiaHw_2WeltSGSIoMSvx3OcEjN0', 
+    
+    // EmailJS Config
     emailPublicKey: 'rEly1Il6Xz0qZwaSc',   
     emailServiceId: 'service_tolm3pu',   
     emailTemplateId_Master: 'template_master', 
     siteUrl: '', 
 
+    // [แก้ไข 1] อีเมลหัวหน้าแผนก (อัปเดตใหม่)
+    // (ตอนนี้ผมใส่เมลเดิมไว้ให้ก่อน คุณสามารถมาแก้เป็นเมลจริงของแต่ละแผนกทีหลังได้ครับ)
     departmentHeads: {
-        'จัดซื้อ': 'jakkidmarat@gmail.com', 'บัญชี': 'jakkidmarat@gmail.com',
-        'ฝ่ายผลิต(เป่า)': 'jakkidmarat@gmail.com', 'ฝ่ายผลิต(พิมพ์)': 'jakkidmarat@gmail.com',
-        'ซ่อมบำรุง': 'jakkidmarat@gmail.com', 'คลังสินค้า': 'jakkidmarat@gmail.com',
-        'ขาย/การตลาด': 'jakkidmarat@gmail.com'
+        'จัดซื้อ': 'asst.purbwp@gmail.com',
+        'QC': 'qs.bestworld@gmail.com',
+        'ซ่อมบำรุง': 'nmt.bwp328@gmail.com',
+        'ฝ่ายผลิต': 'production.bwp328@gmail.com',
+        'HR': 'mgr.hrbwp@gmail.com'
     },
+
+    // ผู้บริหาร & จัดซื้อกลาง
     managerEmail: 'bestworld.bwp328@gmail.com', 
-    purchasingEmail: 'hr.bpp.2564@gmail.com',
+    purchasingEmail: 'bwipurchase@gmail.com',
+
+    // [แก้ไข 2] รหัสผ่านสำหรับ Admin (Login)
     passwords: {
-        '1001': 'จัดซื้อ', '1002': 'บัญชี', '1003': 'ฝ่ายผลิต(เป่า)', '1006': 'ฝ่ายผลิต(พิมพ์)', 
-        '1007': 'ซ่อมบำรุง', '1004': 'คลังสินค้า', '1005': 'ขาย/การตลาด', '9999': 'MANAGER_ROLE' 
+        '1001': 'จัดซื้อ',
+        '1002': 'QC',
+        '1003': 'ซ่อมบำรุง',
+        '1004': 'ฝ่ายผลิต',
+        '1005': 'HR',
+        '9999': 'MANAGER_ROLE' 
     }
 };
 
+// ... (ส่วนที่เหลือของ script.js เหมือนเดิมทุกประการ ไม่ต้องแก้ครับ) ...
+
+// ================= 2. SYSTEM START =================
 const db = supabase.createClient(CONFIG.supaUrl, CONFIG.supaKey);
 if(typeof emailjs !== 'undefined') emailjs.init(CONFIG.emailPublicKey);
 
