@@ -12,7 +12,7 @@ const CONFIG = {
     // [แก้ไข 1] อีเมลหัวหน้าแผนก (อัปเดตใหม่)
     // (ตอนนี้ผมใส่เมลเดิมไว้ให้ก่อน คุณสามารถมาแก้เป็นเมลจริงของแต่ละแผนกทีหลังได้ครับ)
     departmentHeads: {
-        'จัดซื้อ': 'asst.purbwp@gmail.com',
+        'จัดซื้อ': 'mgr.purbwp@gmail.com',
         'QC': 'qs.bestworld@gmail.com',
         'ซ่อมบำรุง': 'mtn.bwp328@gmail.com',
         'ฝ่ายผลิต': 'production.bwp328@gmail.com',
@@ -364,4 +364,5 @@ if(document.getElementById('v_tableBody')) window.onload = loadPRForPrint;
 if(document.getElementById('v_content')) window.onload = loadMemoForPrint;
 
 document.addEventListener('keydown', function(event) { if (event.key === 'Enter' && event.target.tagName === 'INPUT') { event.preventDefault(); return false; } });
+
 
