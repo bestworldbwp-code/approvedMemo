@@ -33,7 +33,6 @@
     <div class="card border-0 shadow-lg p-5 text-center" style="max-width: 400px; width: 90%; border-radius: 20px;">
         <img src="" class="app-logo mb-4 mx-auto" alt="Logo" style="height: 80px;">
         <h4 class="mb-2 fw-bold text-dark">เข้าสู่ระบบผู้บริหาร</h4>
-        <p class="text-muted mb-4 small">กรุณาระบุรหัสผ่านเพื่อเข้าใช้งาน</p>
         <div class="form-floating mb-3"><input type="password" id="adminPassInput" class="form-control rounded-pill text-center" placeholder="Password" inputmode="numeric"><label for="adminPassInput" class="text-center w-100">รหัสผ่าน (Password)</label></div>
         <button onclick="checkAdminPassword()" class="btn btn-primary w-100 btn-lg rounded-pill shadow-sm mb-3">เข้าสู่ระบบ</button>
         <a href="index.html" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left"></i> กลับหน้าหลัก</a>
@@ -65,11 +64,18 @@
             <div class="modal-body">
                 <div class="paper-preview mx-auto rounded shadow-sm" style="max-width: 210mm;">
                     <div class="text-center mb-4 doc-header"><img src="" class="app-logo mb-2" style="height: 60px;"><h4 class="fw-bold m-0 text-dark">บริษัท เบสท์เวิลด์ อินเตอร์พลาส จำกัด</h4><div id="doc_type_title" class="fw-bold mt-2 fs-5 text-secondary"></div></div>
+                    
                     <div id="pr_form_layout" style="display:none;">
                         <div class="row g-3 mb-4"><div class="col-6">เลขที่: <span id="pr_no" class="field-value"></span></div><div class="col-6">วันที่ต้องการ: <span id="pr_req_date" class="field-value text-danger"></span></div><div class="col-6">ผู้ขอซื้อ: <span id="pr_requester" class="field-value"></span></div><div class="col-6">แผนก: <span id="pr_dept" class="field-value"></span></div></div>
-                        <div class="table-responsive rounded border"><table class="table table-sm mb-0 table-striped"><thead class="table-light"><tr class="text-center"><th>รหัส</th><th>รายการ</th><th>จำนวน</th><th>หน่วย</th><th>ผลการพิจารณา</th></tr></thead><tbody id="pr_items_body"></tbody></table></div>
+                        <div class="table-responsive rounded border">
+                            <table class="table table-sm mb-0 table-striped">
+                                <thead class="table-light"><tr class="text-center"><th>รหัส</th><th>รายการ</th><th>จำนวน</th><th>หน่วย</th><th width="20%">ผลการพิจารณา</th><th width="25%">เหตุผล (ถ้าไม่อนุมัติ)</th></tr></thead>
+                                <tbody id="pr_items_body"></tbody>
+                            </table>
+                        </div>
                         <div class="mt-3 p-3 bg-light rounded border border-light"><strong>หมายเหตุ:</strong> <span id="pr_remark" class="text-muted"></span></div>
                     </div>
+
                     <div id="memo_form_layout" style="display:none;">
                         <div class="mb-4">
                             <div class="row mb-2"><div class="col-2 fw-bold">หน่วยงาน</div><div class="col-10 border-bottom border-dark dotted"><span id="memo_from"></span></div></div>
@@ -88,9 +94,9 @@
                 </div>
             </div>
             <div class="modal-footer border-0 bg-white shadow-top py-3 d-flex justify-content-between align-items-center">
-                <div class="flex-grow-1 me-3"><input type="text" id="approval_comment" class="form-control" placeholder="ระบุเหตุผล (กรณีไม่อนุมัติ)..."></div>
+                <div class="flex-grow-1 me-3"><input type="text" id="approval_comment" class="form-control" placeholder="ระบุเหตุผลรวม (กรณีตีกลับทั้งใบ)..."></div>
                 <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-outline-danger px-4 rounded-pill fw-bold" onclick="rejectDocument()"><i class="bi bi-x-circle me-2"></i> ไม่อนุมัติ</button>
+                    <button type="button" class="btn btn-outline-danger px-4 rounded-pill fw-bold" onclick="rejectDocument()"><i class="bi bi-x-circle me-2"></i> ตีกลับเอกสาร</button>
                     <button type="button" class="btn btn-success px-5 rounded-pill shadow-sm fw-bold" onclick="finalizeApproval()"><i class="bi bi-check-lg me-2"></i> อนุมัติ</button>
                 </div>
             </div>
