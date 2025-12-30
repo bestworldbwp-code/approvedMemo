@@ -24,36 +24,44 @@
         <h4 class="fw-bold m-0 text-success">บันทึกข้อความ (Memo)</h4>
     </div>
     <div class="header-title text-center text-muted small">แบบฟอร์มบันทึกข้อความภายใน</div>
+
     <form id="memoForm">
         <div class="row g-3">
             <div class="col-12">
                 <label class="form-label">จากหน่วยงาน</label>
                 <select id="m_from" class="form-select" required>
                     <option value="" selected disabled>-- กรุณาเลือกหน่วยงาน --</option>
-                    <option value="จัดซื้อ">จัดซื้อ</option>
-                    <option value="บัญชี">บัญชี</option>
-                    <option value="ฝ่ายผลิต(เป่า)">ฝ่ายผลิต(เป่า)</option>
-                    <option value="ฝ่ายผลิต(พิมพ์)">ฝ่ายผลิต(พิมพ์)</option>
+                    <option value="QC">QC</option>
                     <option value="ซ่อมบำรุง">ซ่อมบำรุง</option>
-                    <option value="คลังสินค้า">คลังสินค้า</option>
-                    <option value="ขาย/การตลาด">ขาย/การตลาด</option>
+                    <option value="ฝ่ายผลิต">ฝ่ายผลิต</option>
+                    <option value="จัดซื้อ">จัดซื้อ</option>
+                    <option value="HR">HR</option>
                 </select>
             </div>
+
             <div class="col-md-6"><label class="form-label">ที่ (เลขที่เอกสาร)</label><input type="text" id="m_no" class="form-control" placeholder="เช่น MEMO-66/001" required></div>
             <div class="col-md-6"><label class="form-label">วันที่</label><input type="date" id="m_date" class="form-control" required></div>
             <div class="col-12"><label class="form-label">เรื่อง</label><input type="text" id="m_subject" class="form-control" placeholder="ระบุหัวข้อเรื่อง..." required></div>
-            <div class="col-12 mt-4">
-                <div class="input-group">
-                    <span class="input-group-text fw-bold bg-light">เรียน (ถึงใคร)</span>
-                    <input type="text" id="m_to" class="form-control" placeholder="ระบุชื่อผู้รับ หรือ ตำแหน่ง..." required>
-                </div>
-            </div>
+            <div class="col-12 mt-4"><div class="input-group"><span class="input-group-text fw-bold bg-light">เรียน (ถึงใคร)</span><input type="text" id="m_to" class="form-control" placeholder="ระบุชื่อผู้รับ หรือ ตำแหน่ง..." required></div></div>
             <div class="col-12"><label class="form-label mt-2">ข้อความ / รายละเอียด</label><textarea id="m_content" class="form-control" rows="8" placeholder="พิมพ์รายละเอียดที่นี่..." required></textarea></div>
             <div class="col-12"><label class="form-label">แนบไฟล์ (ถ้ามี)</label><input type="file" id="m_attachment" class="form-control" accept=".pdf, .jpg, .jpeg, .png"></div>
         </div>
-        <button type="submit" class="btn btn-success w-100 py-3 fs-5 mt-5 shadow-sm rounded-pill" id="btnMemoSubmit"><i class="bi bi-send-fill me-2"></i> ส่งบันทึกข้อความ</button>
+
+        <button type="submit" class="btn btn-success w-100 py-3 fs-5 mt-5 shadow-sm rounded-pill" id="btnMemoSubmit">
+            <i class="bi bi-send-fill me-2"></i> ส่งบันทึกข้อความ
+        </button>
     </form>
 </div>
-<script src="logo.js"></script><script src="script.js"></script>
+
+<script src="logo.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        if (typeof LOGO_BASE64 !== 'undefined') {
+            document.querySelectorAll('.app-logo').forEach(img => img.src = LOGO_BASE64);
+        }
+    });
+</script>
+<script src="script.js"></script>
+
 </body>
 </html>
